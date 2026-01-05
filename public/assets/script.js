@@ -10,9 +10,238 @@ let filteredTechniciansData = [];
 let currentTechnicianView = 'grid';
 let appliancesData = [];
 let currentApplianceView = 'grid';
-let chatId = null;
-let userName = 'User'; // Default user name
-let messageInterval = null;
+let currentUser = null;
+
+// Authentication functions
+async function login(email, password) {
+    try {
+        const response = await fetch('/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify({ email, password }),
+            redirect: 'manual' // Don't follow redirects automatically
+        });
+
+        if (response.status === 200) {
+            const data = await response.json();
+            if (data.success) {
+                currentUser = data.user;
+                updateUIForLoggedInUser();
+                return { success: true, user: data.user };
+            } else {
+                return { success: false, message: data.message };
+            }
+        } else if (response.status === 302 || response.status === 301) {
+            // Redirect response, login successful
+            window.location.href = response.headers.get('Location') || '/';
+            return { success: true };
+        } else {
+            const data = await response.json().catch(() => ({ message: 'Login failed' }));
+            return { success: false, message: data.message };
+        }
+    } catch (error) {
+        console.error('Login error:', error);
+        return { success: false, message: 'Login failed. Please try again.' };
+    }
+}
+
+async function logout() {
+    try {
+        const response = await fetch('/logout', {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            }
+        });
+
+        if (response.ok) {
+            currentUser = null;
+            updateUIForLoggedOutUser();
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+}
+
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/user');
+        if (response.ok) {
+            currentUser = await response.json();
+            updateUIForLoggedInUser();
+        } else {
+            updateUIForLoggedOutUser();
+        }
+    } catch (error) {
+        updateUIForLoggedOutUser();
+    }
+}
+
+function updateUIForLoggedInUser() {
+    if (!currentUser) return;
+
+    // Hide login section and show user info section
+    const loginSection = document.getElementById('loginSection');
+    const userInfoSection = document.getElementById('userInfoSection');
+
+    if (loginSection) loginSection.classList.add('d-none');
+    if (userInfoSection) userInfoSection.classList.remove('d-none');
+
+    // Update user info
+    const userName = document.getElementById('userName');
+    const userRole = document.getElementById('userRole');
+
+    if (userName) userName.textContent = currentUser.name;
+    if (userRole) {
+        userRole.textContent = currentUser.role.toUpperCase();
+        // Set role badge color
+        userRole.className = 'badge ' + getRoleBadgeClass(currentUser.role);
+    }
+
+    // Update guest access section to show logged in status
+    const guestAccessSection = document.getElementById('guestAccessSection');
+    if (guestAccessSection) {
+        guestAccessSection.innerHTML = `
+            <span class="d-flex align-items-center">
+                <i class="fas fa-check-circle me-1 text-success" style="font-size: 0.7rem;"></i>
+                <span class="fw-bold text-success" style="font-size: 0.7rem;">Authenticated User</span>
+            </span>
+        `;
+    }
+
+    // Update user access section
+    const userAccessSection = document.getElementById('userAccessSection');
+    if (userAccessSection) {
+        userAccessSection.innerHTML = `
+            <span class="d-flex align-items-center">
+                <i class="fas fa-shield-alt me-1 text-success" style="font-size: 0.7rem;"></i>
+                <span class="fw-bold text-success" style="font-size: 0.7rem;">${getAccessLevel(currentUser.role)}</span>
+            </span>
+        `;
+    }
+
+    // Set up logout functionality
+    const logoutLink = document.getElementById('logoutLink');
+    if (logoutLink) {
+        logoutLink.onclick = (e) => {
+            e.preventDefault();
+            logout();
+        };
+    }
+
+    // Show/hide sections based on role
+    updateSectionVisibility();
+}
+
+function updateUIForLoggedOutUser() {
+    // Show login section and hide user info section
+    const loginSection = document.getElementById('loginSection');
+    const userInfoSection = document.getElementById('userInfoSection');
+
+    if (loginSection) loginSection.classList.remove('d-none');
+    if (userInfoSection) userInfoSection.classList.add('d-none');
+
+    // Reset guest access section
+    const guestAccessSection = document.getElementById('guestAccessSection');
+    if (guestAccessSection) {
+        guestAccessSection.innerHTML = `
+            <span class="d-flex align-items-center">
+                <i class="fas fa-user-friends me-1 text-info" style="font-size: 0.7rem;"></i>
+                <span class="fw-bold text-info" style="font-size: 0.7rem;">User access</span>
+            </span>
+        `;
+    }
+
+    // Reset user access section
+    const userAccessSection = document.getElementById('userAccessSection');
+    if (userAccessSection) {
+        userAccessSection.innerHTML = `
+            <span class="d-flex align-items-center">
+                <i class="fas fa-exclamation-circle me-1 text-warning" style="font-size: 0.7rem;"></i>
+                <span class="fw-bold text-warning" style="font-size: 0.7rem;">Authentication Required</span>
+            </span>
+        `;
+    }
+}
+
+function getRoleBadgeClass(role) {
+    switch(role) {
+        case 'admin': return 'bg-danger';
+        case 'trainer': return 'bg-warning text-dark';
+        case 'technician': return 'bg-info';
+        default: return 'bg-secondary';
+    }
+}
+
+function getAccessLevel(role) {
+    switch(role) {
+        case 'admin': return 'Full System Access';
+        case 'trainer': return 'Training & Reports Access';
+        case 'technician': return 'Inventory Access Only';
+        default: return 'Limited Access';
+    }
+}
+
+function updateSectionVisibility() {
+    if (!currentUser) return;
+
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+
+        // Admin can access everything
+        if (currentUser.role === 'admin') {
+            link.style.display = '';
+            return;
+        }
+
+        // Trainer access
+        if (currentUser.role === 'trainer') {
+            if (href === '#trainers' || href === '#qualified-technicians' || href === '#reports') {
+                link.style.display = '';
+            } else if (href === '#settings') {
+                link.style.display = 'none';
+            }
+            return;
+        }
+
+        // Technician access (most restricted)
+        if (currentUser.role === 'technician') {
+            if (href === '#dashboard' || href === '#inventory' || href === '#appliances') {
+                link.style.display = '';
+            } else {
+                link.style.display = 'none';
+            }
+        }
+    });
+}
+
+function hasPermission(section) {
+    if (!currentUser) return true; // Guest can view all
+
+    const role = currentUser.role;
+
+    // Admin has access to everything
+    if (role === 'admin') return true;
+
+    // Trainer access
+    if (role === 'trainer') {
+        return ['dashboard-section', 'inventory', 'appliances', 'trainers', 'qualified-technicians', 'reports'].includes(section);
+    }
+
+    // Technician access (most restricted)
+    if (role === 'technician') {
+        return ['dashboard-section', 'inventory', 'appliances'].includes(section);
+    }
+
+    return true; // Default allow for guests
+}
 
 // DOM Elements
 const inventoryGrid = document.getElementById('inventoryGrid');
@@ -52,28 +281,7 @@ const applianceBrandFilter = document.getElementById('applianceBrandFilter');
 const applianceSortFilter = document.getElementById('applianceSortFilter');
 const applianceViewFilter = document.getElementById('applianceViewFilter');
 
-const chatModal = new bootstrap.Modal(document.getElementById('chatModal'));
-const chatButton = document.getElementById('chatButton');
-const chatMessages = document.getElementById('chatMessages');
-const chatMessageInput = document.getElementById('chatMessageInput');
-const sendMessageBtn = document.getElementById('sendMessageBtn');
-const attachBtn = document.getElementById('attachBtn');
-const fileInput = document.getElementById('fileInput');
-const emojiBtn = document.getElementById('emojiBtn');
-const emojiPicker = document.getElementById('emojiPicker');
-const voiceBtn = document.getElementById('voiceBtn');
-const voiceRecorder = document.getElementById('voiceRecorder');
-const recordBtn = document.getElementById('recordBtn');
-const stopRecordBtn = document.getElementById('stopRecordBtn');
-const audioPreview = document.getElementById('audioPreview');
-const gifBtn = document.getElementById('gifBtn');
-const gifPicker = document.getElementById('gifPicker');
-const gifSearch = document.getElementById('gifSearch');
-const gifResults = document.getElementById('gifResults');
-const locationBtn = document.getElementById('locationBtn');
-const contactBtn = document.getElementById('contactBtn');
-const chatSearchInput = document.getElementById('searchInput');
-const searchBtn = document.getElementById('searchBtn');
+
 
 // Modal elements
 const modalPartImage = document.getElementById('modalPartImage');
@@ -88,7 +296,7 @@ const modalDescription = document.getElementById('modalDescription');
 const modalAvailability = document.getElementById('modalAvailability');
 const modalComments = document.getElementById('modalComments');
 
-// Cache flags
+// Cache flags - removed to always fetch fresh data
 let dataLoaded = {
     inventory: false,
     appliances: false,
@@ -104,16 +312,26 @@ async function init() {
     adjustSidebarWidth();
     createFooter();
     styleNavbar();
+
+    // Check authentication status
+    await checkAuthStatus();
+
     document.getElementById('inventory').style.display = 'none';
     document.getElementById('appliances').style.display = 'none';
     document.getElementById('trainers').style.display = 'none';
     document.getElementById('qualified-technicians').style.display = 'none';
     document.getElementById('reports').style.display = 'none';
     window.scrollTo(0, 0);
-    
-    // Load only dashboard data in parallel
+
+    // Check URL hash on load and load data
+    const hash = window.location.hash;
+    if (hash === '#inventory-stats' || hash === '#inventory') {
+        document.getElementById('dashboard-section').style.display = 'none';
+        document.getElementById('inventory').style.display = 'block';
+        loadInventoryData();
+    }
+
     Promise.all([
-        loadInventoryData(),
         loadStatistics(),
         loadTrainerStatistics()
     ]).then(() => {
@@ -126,6 +344,7 @@ async function loadTechniciansData() {
     if (dataLoaded.technicians) return;
     try {
         const response = await fetch('/api/technicians');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         techniciansData = await response.json();
         filteredTechniciansData = [...techniciansData];
         dataLoaded.technicians = true;
@@ -133,6 +352,7 @@ async function loadTechniciansData() {
         renderTechnicians();
     } catch (error) {
         console.error('Error loading technicians data:', error);
+        showNotification('Failed to load technicians data', 'error');
     }
 }
 
@@ -142,7 +362,7 @@ function updateTechnicianStatistics() {
     const available = techniciansData.filter(t => t.status === 'Available').length;
     const busy = techniciansData.filter(t => t.status === 'Busy').length;
     const unavailable = techniciansData.filter(t => t.status === 'Unavailable').length;
-    
+
     document.getElementById('technicianStatsTotal').textContent = total;
     document.getElementById('technicianStatsAvailable').textContent = available;
     document.getElementById('technicianStatsBusy').textContent = busy;
@@ -151,15 +371,47 @@ function updateTechnicianStatistics() {
 
 // Load data from API
 async function loadInventoryData() {
-    if (dataLoaded.inventory) return;
+    if (!inventoryGrid) {
+        console.error('Inventory grid element not found');
+        return;
+    }
+    
+    inventoryGrid.innerHTML = `
+        <div class="col-12 text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3 text-muted">Loading parts data...</p>
+        </div>
+    `;
+    
     try {
         const response = await fetch('/api/parts');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
         inventoryData = await response.json();
         filteredData = [...inventoryData];
         dataLoaded.inventory = true;
-        renderInventory();
+        
+        console.log('Parts loaded:', inventoryData.length);
+        
+        if (inventoryData.length === 0) {
+            inventoryGrid.innerHTML = `
+                <div class="col-12"><div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>No parts available.
+                </div></div>
+            `;
+        } else {
+            renderInventory();
+        }
     } catch (error) {
-        console.error('Error loading inventory data:', error);
+        console.error('Error:', error);
+        inventoryGrid.innerHTML = `
+            <div class="col-12"><div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle me-2"></i>Error: ${error.message}
+                <button class="btn btn-sm btn-outline-danger ms-3" onclick="loadInventoryData()">
+                    <i class="fas fa-redo me-1"></i>Retry
+                </button>
+            </div></div>
+        `;
     }
 }
 
@@ -168,11 +420,13 @@ async function loadAppliancesData() {
     if (dataLoaded.appliances) return;
     try {
         const response = await fetch('/api/appliances');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         appliancesData = await response.json();
         dataLoaded.appliances = true;
         renderAppliances();
     } catch (error) {
         console.error('Error loading appliances data:', error);
+        showNotification('Failed to load appliances data', 'error');
     }
 }
 
@@ -215,37 +469,47 @@ function createApplianceCard(appliance) {
     const statusIcon = appliance.status === 'Available' ? 'check-circle' : (appliance.status === 'In Use' ? 'play-circle' : 'times-circle');
     const statusText = appliance.status === 'Available' ? 'Available' : (appliance.status === 'In Use' ? 'In Use' : 'Not Available');
 
+    const imageHtml = appliance.image 
+        ? `<img src="/storage/${appliance.image}" alt="${appliance.name}" style="width:100%;height:150px;object-fit:cover;border-radius:8px 8px 0 0;">`
+        : `<div class="bg-${appliance.color || 'primary'} d-flex align-items-center justify-content-center" style="width:100%;height:150px;border-radius:8px 8px 0 0;">
+            <i class="fas fa-${appliance.icon || 'tv'} text-white" style="font-size:3rem;"></i>
+          </div>`;
+
     card.innerHTML = `
-        <div class="card p-4 h-100" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <div class="d-flex align-items-center mb-3">
-                <div class="bg-${appliance.color || 'primary'} rounded p-3 d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
-                    <i class="fas fa-${appliance.icon || 'tv'} text-white"></i>
+        <div class="card p-0 h-100" style="cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border: none; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            ${imageHtml}
+            <div class="p-3">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="flex-grow-1">
+                        <h4 class="h5 mb-1">${appliance.name}</h4>
+                        <p class="text-muted small mb-0">${appliance.brand || 'No Brand'}</p>
+                    </div>
+                    <span class="badge bg-${statusClass}"><i class="fas fa-${statusIcon} me-1"></i>${statusText}</span>
                 </div>
-                <div class="flex-grow-1">
-                    <h4 class="h5 mb-1">${appliance.name}</h4>
-                    <p class="text-muted small mb-0">${appliance.brand || 'No Brand'}</p>
+                <div class="text-muted small">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fas fa-tag me-2"></i>
+                        <span>Model: ${appliance.model || 'N/A'}</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fas fa-bolt me-2"></i>
+                        <span>Power: ${appliance.power || 'N/A'}</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fas fa-barcode me-2"></i>
+                        <span>SKU: ${appliance.sku || 'N/A'}</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fas fa-calendar me-2"></i>
+                        <span>${new Date(appliance.created_at).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
+                    </div>
+                    ${appliance.price ? `<div class="d-flex align-items-center">
+                        <i class="fas fa-tag me-2"></i>
+                        <span class="fw-bold text-success">UGX ${parseFloat(appliance.price).toLocaleString()}</span>
+                    </div>` : ''}
                 </div>
-                <span class="badge bg-${statusClass}"><i class="fas fa-${statusIcon} me-1"></i>${statusText}</span>
+                ${appliance.description ? `<div class="mt-3 pt-3 border-top"><small class="text-muted">${appliance.description.substring(0, 100)}...</small></div>` : ''}
             </div>
-            <div class="text-muted small">
-                <div class="d-flex align-items-center mb-1">
-                    <i class="fas fa-tag me-2"></i>
-                    <span>Model: ${appliance.model || 'N/A'}</span>
-                </div>
-                <div class="d-flex align-items-center mb-1">
-                    <i class="fas fa-bolt me-2"></i>
-                    <span>Power: ${appliance.power || 'N/A'}</span>
-                </div>
-                <div class="d-flex align-items-center mb-1">
-                    <i class="fas fa-barcode me-2"></i>
-                    <span>SKU: ${appliance.sku || 'N/A'}</span>
-                </div>
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-calendar me-2"></i>
-                    <span>${new Date(appliance.created_at).toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</span>
-                </div>
-            </div>
-            ${appliance.description ? `<div class="mt-3 pt-3 border-top"><small class="text-muted">${appliance.description.substring(0, 100)}...</small></div>` : ''}
         </div>
     `;
 
@@ -253,8 +517,21 @@ function createApplianceCard(appliance) {
         const partsCount = await fetchAppliancePartsCount(appliance.id);
         viewApplianceDetails(appliance.id, appliance.name, appliance.brand || 'N/A', appliance.model || 'N/A',
             appliance.power || 'N/A', appliance.sku || 'N/A', appliance.status, appliance.description || '',
-            appliance.icon || 'tools', appliance.color || 'primary', appliance.price || '', appliance.created_at, partsCount);
+            appliance.icon || 'tools', appliance.color || 'primary', appliance.price || '', appliance.created_at, partsCount, appliance.image, appliance);
     });
+
+    // Add edit button for admin
+    if (currentUser && currentUser.role === 'admin') {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-sm btn-warning position-absolute top-0 end-0 m-2';
+        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+        editBtn.onclick = (e) => {
+            e.stopPropagation();
+            editAppliance(appliance);
+        };
+        card.querySelector('.card').style.position = 'relative';
+        card.querySelector('.card').appendChild(editBtn);
+    }
 
     return card;
 }
@@ -291,7 +568,7 @@ function createApplianceListRow(appliance) {
         const partsCount = await fetchAppliancePartsCount(appliance.id);
         viewApplianceDetails(appliance.id, appliance.name, appliance.brand || 'N/A', appliance.model || 'N/A',
             appliance.power || 'N/A', appliance.sku || 'N/A', appliance.status, appliance.description || '',
-            appliance.icon || 'tools', appliance.color || 'primary', appliance.price || '', appliance.created_at, partsCount);
+            appliance.icon || 'tools', appliance.color || 'primary', appliance.price || '', appliance.created_at, partsCount, appliance.image, appliance);
     });
 
     return row;
@@ -302,6 +579,7 @@ async function loadTrainersData() {
     if (dataLoaded.trainers) return;
     try {
         const response = await fetch('/api/trainers');
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         trainersData = await response.json();
         filteredTrainersData = [...trainersData];
         dataLoaded.trainers = true;
@@ -309,6 +587,7 @@ async function loadTrainersData() {
         populateTrainerFilters();
     } catch (error) {
         console.error('Error loading trainers data:', error);
+        showNotification('Failed to load trainers data', 'error');
     }
 }
 
@@ -375,11 +654,10 @@ function createPartCard(item) {
     const card = document.createElement('div');
     card.className = 'col-lg-3 col-md-4 col-sm-6';
 
-    // Use badge class from database
     let badgeClass = item.badgeClass || 'bg-secondary';
 
     card.innerHTML = `
-        <div class="card h-100 shadow-sm">
+        <div class="card h-100 shadow-sm" style="position:relative;">
             <div class="card-image" style="height: 200px; overflow: hidden;">
                 ${item.image ?
                     `<img src="${item.image}" class="card-img-top" alt="${item.name}" style="height: 100%; object-fit: cover;">` :
@@ -397,6 +675,7 @@ function createPartCard(item) {
                 <h6 class="card-title">${item.name}</h6>
                 <p class="card-text text-muted small flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${item.description}</p>
                 <div class="mt-auto">
+                    ${item.price ? `<div class="mb-2"><span class="badge bg-success">UGX ${parseFloat(item.price).toLocaleString()}</span></div>` : ''}
                     <small class="text-muted">${item.brands.join(', ')}</small>
                     <div class="mt-1">
                         <span class="badge ${item.availability ? 'bg-success' : 'bg-secondary'}">
@@ -408,7 +687,29 @@ function createPartCard(item) {
         </div>
     `;
 
-    card.addEventListener('click', () => openModal(item));
+    if (currentUser && currentUser.role === 'admin') {
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn btn-sm btn-warning position-absolute';
+        editBtn.style.cssText = 'top: 8px; right: 8px; z-index: 10;';
+        editBtn.innerHTML = '<i class="fas fa-edit"></i>';
+        editBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (typeof window.editPart === 'function') {
+                window.editPart(item.id);
+            } else {
+                window.location.href = '/admin#parts-management';
+            }
+        });
+        card.querySelector('.card').appendChild(editBtn);
+    }
+    
+    card.addEventListener('click', (e) => {
+        if (!e.target.closest('button')) {
+            openModal(item);
+        }
+    });
+    
     return card;
 }
 
@@ -421,15 +722,21 @@ function createListRow(item) {
         <td>${item.name}</td>
         <td><span class="badge ${item.badgeClass}">${item.applianceType}</span></td>
         <td>${item.brands.join(', ')}</td>
+        <td>${item.price ? 'UGX ' + parseFloat(item.price).toLocaleString() : 'N/A'}</td>
         <td>
             <span class="badge ${item.availability ? 'bg-success' : 'bg-secondary'}">
                 ${item.availability ? 'Available' : 'Not Available'}
             </span>
         </td>
         <td>
-            <button class="btn btn-sm btn-outline-primary view-details-btn">
+            <button class="btn btn-sm btn-outline-primary view-details-btn me-1">
                 <i class="fas fa-eye"></i> View
             </button>
+            ${currentUser && currentUser.role === 'admin' ? `
+                <button class="btn btn-sm btn-outline-warning edit-part-btn">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+            ` : ''}
         </td>
     `;
 
@@ -437,6 +744,17 @@ function createListRow(item) {
         e.stopPropagation();
         openModal(item);
     });
+    
+    if (currentUser && currentUser.role === 'admin') {
+        row.querySelector('.edit-part-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (typeof window.editPart === 'function') {
+                window.editPart(item.id);
+            } else {
+                window.location.href = '/admin#parts-management';
+            }
+        });
+    }
 
     return row;
 }
@@ -445,16 +763,24 @@ function createListRow(item) {
 function createTrainerCard(trainer) {
     const card = document.createElement('div');
     card.className = 'col-lg-4 col-md-6 col-sm-12 trainer-card';
-    card.style.cursor = 'pointer';
 
     const initials = trainer.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const profilePic = trainer.image || trainer.profile_picture;
+    const avatarContent = profilePic 
+        ? `<img src="/storage/${profilePic}" alt="${trainer.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+        : `<span class="text-white fw-bold fs-5">${initials}</span>`;
+
+    const canEdit = currentUser && (
+        currentUser.role === 'admin' ||
+        (currentUser.role === 'trainer' && currentUser.email === trainer.email)
+    );
 
     card.innerHTML = `
         <div class="card h-100 shadow-sm">
             <div class="card-body d-flex flex-column">
                 <div class="d-flex align-items-center mb-3">
-                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px;">
-                        <span class="text-white fw-bold fs-5">${initials}</span>
+                    <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px; overflow: hidden;">
+                        ${avatarContent}
                     </div>
                     <div class="flex-grow-1">
                         <h5 class="card-title mb-1">${trainer.name}</h5>
@@ -474,18 +800,43 @@ function createTrainerCard(trainer) {
                         <i class="fas fa-clock me-2"></i>
                         ${trainer.experience} years experience
                     </div>
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fas fa-money-bill me-2"></i>
+                        <span class="fw-bold text-success">UGX ${parseFloat(trainer.hourly_rate || 0).toLocaleString()}/hour</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fas fa-box me-2"></i>
+                        <span class="fw-bold">Available: ${trainer.quantity || trainer.available_stock || 0} in stock</span>
+                    </div>
                 </div>
                 <div class="mt-auto">
-                    <div class="text-muted small">
+                    <div class="text-muted small mb-2">
                         <strong>Qualifications:</strong> ${trainer.qualifications || 'Not specified'}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary flex-fill view-trainer-btn" onclick="event.stopPropagation()">
+                            <i class="fas fa-eye"></i> View
+                        </button>
+                        ${canEdit ? `<button class="btn btn-sm btn-outline-success flex-fill edit-trainer-btn" onclick="event.stopPropagation()">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>` : ''}
                     </div>
                 </div>
             </div>
         </div>
     `;
 
+    card.querySelector('.view-trainer-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        viewTrainerDetails(trainer);
+    });
 
-    card.addEventListener('click', () => viewTrainerDetails(trainer));
+    if (canEdit) {
+        card.querySelector('.edit-trainer-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            openTrainerEditModal(trainer);
+        });
+    }
 
     return card;
 }
@@ -494,21 +845,34 @@ function createTrainerCard(trainer) {
 function createTrainerListRow(trainer) {
     const row = document.createElement('tr');
 
+    // Check if current user can edit this trainer
+    const canEdit = currentUser && (
+        currentUser.role === 'admin' ||
+        (currentUser.role === 'trainer' && currentUser.email === trainer.email)
+    );
+
     row.innerHTML = `
         <td>${trainer.name}</td>
         <td>${trainer.specialty}</td>
         <td>${trainer.email}</td>
         <td>${trainer.phone}</td>
         <td>${trainer.experience} years</td>
+        <td><span class="fw-bold text-success">UGX ${parseFloat(trainer.hourly_rate || 0).toLocaleString()}/hour</span></td>
         <td>${trainer.location || 'Not specified'}</td>
         <td>
-            <button class="btn btn-sm btn-outline-primary view-trainer-btn" data-id="${trainer.id}">
+            <button class="btn btn-sm btn-outline-primary view-trainer-btn me-1" data-id="${trainer.id}">
                 <i class="fas fa-eye"></i> View
             </button>
+            ${canEdit ? `<button class="btn btn-sm btn-outline-success edit-trainer-btn" data-id="${trainer.id}">
+                <i class="fas fa-edit"></i> Edit
+            </button>` : ''}
         </td>
     `;
 
     row.querySelector('.view-trainer-btn').addEventListener('click', () => viewTrainerDetails(trainer));
+    if (canEdit) {
+        row.querySelector('.edit-trainer-btn').addEventListener('click', () => openTrainerEditModal(trainer));
+    }
 
     return row;
 }
@@ -547,26 +911,45 @@ function openModal(item) {
     partModal.show();
 }
 
-// Open trainer modal for create/edit
-function openTrainerModal(trainer = null) {
+// Open trainer edit modal with pre-filled data
+function openTrainerEditModal(trainer) {
     const modal = document.getElementById('trainerModal');
     const form = document.getElementById('trainerForm');
     const modalTitle = document.getElementById('trainerModalLabel');
 
-    if (trainer) {
-        modalTitle.textContent = 'Edit Trainer';
-        document.getElementById('trainerId').value = trainer.id;
-        document.getElementById('trainerName').value = trainer.name;
-        document.getElementById('trainerSpecialty').value = trainer.specialty;
-        document.getElementById('trainerEmail').value = trainer.email;
-        document.getElementById('trainerPhone').value = trainer.phone;
-        document.getElementById('trainerExperience').value = trainer.experience;
-        document.getElementById('trainerQualifications').value = trainer.qualifications || '';
-    } else {
-        modalTitle.textContent = 'Add New Trainer';
-        form.reset();
-        document.getElementById('trainerId').value = '';
-    }
+    modalTitle.innerHTML = '<i class="fas fa-user-edit me-2"></i>Edit Trainer Details';
+    document.getElementById('trainerId').value = trainer.id;
+
+    // Fill all form fields
+    document.getElementById('trainerFirstName').value = trainer.first_name || trainer.name.split(' ')[0] || '';
+    document.getElementById('trainerMiddleName').value = trainer.middle_name || '';
+    document.getElementById('trainerLastName').value = trainer.last_name || trainer.name.split(' ').slice(1).join(' ') || '';
+    document.getElementById('trainerGender').value = trainer.gender || '';
+    document.getElementById('trainerDOB').value = trainer.date_of_birth || '';
+    document.getElementById('trainerNationality').value = trainer.nationality || 'Ugandan';
+    document.getElementById('trainerIDNumber').value = trainer.id_number || '';
+    document.getElementById('trainerEmail').value = trainer.email;
+    document.getElementById('trainerPhone').value = trainer.phone;
+    document.getElementById('trainerWhatsapp').value = trainer.whatsapp || '';
+    document.getElementById('trainerEmergencyContact').value = trainer.emergency_contact || '';
+    document.getElementById('trainerEmergencyPhone').value = trainer.emergency_phone || '';
+    document.getElementById('trainerCountry').value = trainer.country || 'Uganda';
+    document.getElementById('trainerRegion').value = trainer.region || '';
+    document.getElementById('trainerDistrict').value = trainer.district || '';
+    document.getElementById('trainerSubCounty').value = trainer.sub_county || '';
+    document.getElementById('trainerVillage').value = trainer.village || '';
+    document.getElementById('trainerPostalCode').value = trainer.postal_code || '';
+    document.getElementById('trainerSpecialty').value = trainer.specialty;
+    document.getElementById('trainerExperience').value = trainer.experience;
+    document.getElementById('trainerLicenseNumber').value = trainer.license_number || '';
+    document.getElementById('trainerHourlyRate').value = trainer.hourly_rate || '';
+    document.getElementById('trainerDailyRate').value = trainer.daily_rate || '';
+    document.getElementById('trainerStatus').value = trainer.status || 'Active';
+    document.getElementById('trainerSkills').value = trainer.skills || '';
+    document.getElementById('trainerQualifications').value = trainer.qualifications || '';
+    document.getElementById('trainerCertifications').value = trainer.certifications || '';
+    document.getElementById('trainerLanguages').value = trainer.languages || '';
+    document.getElementById('trainerNotes').value = trainer.notes || '';
 
     trainerModal.show();
 }
@@ -632,9 +1015,16 @@ function viewTrainerDetails(trainer) {
         console.error('Modal element not found');
         return;
     }
+
+    const profilePic = trainer.image || trainer.profile_picture;
+    const trainerDetailsImage = document.getElementById('trainerDetailsImage');
     
-    const initials = trainer.name.split(' ').map(n => n[0]).join('').toUpperCase();
-    document.getElementById('trainerDetailsImage').textContent = initials;
+    if (profilePic) {
+        trainerDetailsImage.innerHTML = `<img src="/storage/${profilePic}" alt="${trainer.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+        const initials = trainer.name.split(' ').map(n => n[0]).join('').toUpperCase();
+        trainerDetailsImage.textContent = initials;
+    }
     document.getElementById('trainerDetailsName').textContent = trainer.name;
     document.getElementById('trainerDetailsSpecialty').textContent = trainer.specialty;
     document.getElementById('trainerDetailsEmail').textContent = trainer.email;
@@ -642,12 +1032,13 @@ function viewTrainerDetails(trainer) {
     document.getElementById('trainerDetailsWhatsapp').textContent = trainer.whatsapp || trainer.phone;
     document.getElementById('trainerDetailsLocation').textContent = trainer.location || 'Not specified';
     document.getElementById('trainerDetailsExperience').textContent = `${trainer.experience} years`;
-    document.getElementById('trainerDetailsRate').textContent = trainer.hourly_rate ? `UGX ${trainer.hourly_rate}/hr` : 'Not set';
+    document.getElementById('trainerDetailsRate').textContent = trainer.hourly_rate ? `UGX ${parseFloat(trainer.hourly_rate).toLocaleString()}/hr` : 'Not set';
     document.getElementById('trainerDetailsLicense').textContent = trainer.license_number || 'N/A';
+    document.getElementById('trainerDetailsStock').textContent = trainer.quantity || trainer.available_stock || 0;
     document.getElementById('trainerDetailsRegionDistrict').textContent = `${trainer.region || ''}, ${trainer.district || ''}`;
     document.getElementById('trainerDetailsFullAddress').textContent = `${trainer.village || ''}, ${trainer.sub_county || ''}, ${trainer.district || ''}`;
     document.getElementById('trainerDetailsCountry').textContent = trainer.country || 'Uganda';
-    
+
     const addressCard = document.querySelector('#trainerDetailsModal .card[style*="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)"]');
     if (addressCard) {
         addressCard.style.cursor = 'pointer';
@@ -657,23 +1048,21 @@ function viewTrainerDetails(trainer) {
             window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}`, '_blank');
         };
     }
-    
+
     document.getElementById('trainerDetailsSkills').innerHTML = trainer.skills ? trainer.skills.split(',').map(s => `<span class="badge bg-light text-dark me-1 mb-1">${s.trim()}</span>`).join('') : '<span class="text-muted">Not specified</span>';
     document.getElementById('trainerDetailsLanguages').innerHTML = trainer.languages ? trainer.languages.split(',').map(l => `<span class="badge bg-light text-dark me-1 mb-1">${l.trim()}</span>`).join('') : '<span class="text-muted">Not specified</span>';
     document.getElementById('trainerDetailsCertifications').innerHTML = trainer.certifications ? trainer.certifications.split(',').map(c => `<span class="badge bg-success me-1 mb-1">${c.trim()}</span>`).join('') : '<span class="text-muted">Not specified</span>';
     document.getElementById('trainerDetailsQualifications').innerHTML = trainer.qualifications ? `<p class="text-muted mb-0">${trainer.qualifications}</p>` : '<span class="text-muted">Not specified</span>';
     document.getElementById('trainerDetailsNotes').textContent = trainer.notes || 'No additional notes';
-    
+
     document.getElementById('trainerDetailsTrainingsCompleted').textContent = trainer.trainings_count || 0;
     document.getElementById('trainerDetailsStudents').textContent = trainer.students_count || 0;
     document.getElementById('trainerDetailsTrainings').textContent = trainer.sessions_count || 0;
     document.getElementById('trainerDetailsId').textContent = trainer.id || 'N/A';
-    
-    const status = trainer.status || 'Active';
-    const statusBadge = document.getElementById('trainerDetailsStatus');
-    statusBadge.className = status === 'Active' ? 'badge bg-success me-2' : 'badge bg-secondary me-2';
-    statusBadge.textContent = status;
-    
+
+    document.getElementById('trainerDetailsRating').textContent = trainer.rating || 'N/A';
+    document.getElementById('trainerDetailsStatus').textContent = trainer.status || 'Active';
+
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
 }
@@ -789,12 +1178,23 @@ function createTechnicianCard(tech) {
     const badgeClass = tech.status === 'Busy' ? 'warning' : 'info';
     const skills = Array.isArray(tech.skills) ? tech.skills.join(', ') : (tech.skills || 'N/A');
     const certs = Array.isArray(tech.certifications) ? tech.certifications.join(', ') : (tech.certifications || 'N/A');
-    
+
+    const canEdit = currentUser && (
+        currentUser.role === 'admin' ||
+        currentUser.role === 'trainer' ||
+        (currentUser.role === 'technician' && currentUser.email === tech.email)
+    );
+
+    const profilePic = tech.profile_photo || tech.image || tech.profile_picture;
+    const avatarContent = profilePic 
+        ? `<img src="/storage/${profilePic}" alt="${tech.name}" style="width:100%;height:100%;object-fit:cover;">`
+        : `<span class="text-white fw-bold">${initials}</span>`;
+
     card.innerHTML = `
-        <div class="card p-4 technician-card" style="cursor: pointer;">
+        <div class="card p-4 technician-card">
             <div class="d-flex align-items-center mb-3">
-                <div class="bg-${badgeClass} rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px;">
-                    <span class="text-white fw-bold">${initials}</span>
+                <div class="bg-${badgeClass} rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 48px; height: 48px; overflow: hidden;">
+                    ${avatarContent}
                 </div>
                 <div class="flex-grow-1">
                     <h4 class="h5 mb-1">${tech.name}</h4>
@@ -823,21 +1223,36 @@ function createTechnicianCard(tech) {
                     <i class="fas fa-clock me-2"></i>
                     ${tech.experience} years experience
                 </div>
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center mb-1">
                     <i class="fas fa-money-bill me-2"></i>
-                    UGX ${parseFloat(tech.rate || 0).toLocaleString()}/hour
+                    <span class="fw-bold text-success">UGX ${parseFloat(tech.hourly_rate || tech.rate || 0).toLocaleString()}/hour</span>
+                </div>
+                <div class="d-flex align-items-center mb-1">
+                    <i class="fas fa-box me-2"></i>
+                    <span class="fw-bold">Available: ${tech.quantity || tech.available_stock || 0} in stock</span>
                 </div>
             </div>
-            <div class="text-muted small mb-3">
+            <div class="text-muted small mb-2">
                 <strong>Skills:</strong> ${skills}
             </div>
-            <div class="text-muted small">
+            <div class="text-muted small mb-3">
                 <strong>Certifications:</strong> ${certs}
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-outline-primary flex-fill view-tech-btn">
+                    <i class="fas fa-eye"></i> View
+                </button>
+                ${canEdit ? `<button class="btn btn-sm btn-outline-success flex-fill edit-tech-btn">
+                    <i class="fas fa-edit"></i> Edit
+                </button>` : ''}
             </div>
         </div>
     `;
-    
-    card.addEventListener('click', () => viewTechnicianDetails(tech));
+
+    card.querySelector('.view-tech-btn').addEventListener('click', () => viewTechnicianDetails(tech));
+    if (canEdit) {
+        card.querySelector('.edit-tech-btn').addEventListener('click', () => openTechnicianEditModal(tech));
+    }
     return card;
 }
 
@@ -847,7 +1262,14 @@ function createTechnicianListRow(tech) {
     const initials = tech.name.split(' ').map(n => n[0]).join('').toUpperCase();
     const statusClass = tech.status === 'Available' ? 'success' : (tech.status === 'Busy' ? 'warning' : 'danger');
     const badgeClass = tech.status === 'Busy' ? 'warning' : 'info';
-    
+
+    // Check if current user can edit this technician
+    const canEdit = currentUser && (
+        currentUser.role === 'admin' ||
+        currentUser.role === 'trainer' ||
+        (currentUser.role === 'technician' && currentUser.email === tech.email)
+    );
+
     row.innerHTML = `
         <td>
             <div class="d-flex align-items-center">
@@ -862,14 +1284,18 @@ function createTechnicianListRow(tech) {
         <td>${tech.license}</td>
         <td>${tech.location}</td>
         <td>${tech.experience} years</td>
-        <td>UGX ${parseFloat(tech.rate || 0).toLocaleString()}/hour</td>
+        <td><span class="fw-bold text-success">UGX ${parseFloat(tech.hourly_rate || tech.rate || 0).toLocaleString()}/hour</span></td>
         <td><span class="badge bg-${statusClass}">${tech.status}</span></td>
         <td>
-            <button class="btn btn-sm btn-outline-primary view-technician-btn"><i class="fas fa-eye"></i> View</button>
+            <button class="btn btn-sm btn-outline-primary view-technician-btn me-1"><i class="fas fa-eye"></i> View</button>
+            ${canEdit ? `<button class="btn btn-sm btn-outline-success edit-technician-btn"><i class="fas fa-edit"></i> Edit</button>` : ''}
         </td>
     `;
-    
+
     row.querySelector('.view-technician-btn').addEventListener('click', () => viewTechnicianDetails(tech));
+    if (canEdit) {
+        row.querySelector('.edit-technician-btn').addEventListener('click', () => openTechnicianEditModal(tech));
+    }
     return row;
 }
 
@@ -1010,9 +1436,15 @@ function sortTableRowsByExperience(tableBodySelector) {
 
 // View technician details
 function viewTechnicianDetails(tech) {
-    const initials = tech.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const profilePic = tech.profile_photo || tech.image || tech.profile_picture;
     const technicianViewPhoto = document.getElementById('technicianViewPhoto');
-    technicianViewPhoto.innerHTML = initials;
+    
+    if (profilePic) {
+        technicianViewPhoto.innerHTML = `<img src="/storage/${profilePic}" alt="${tech.name}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    } else {
+        const initials = tech.name.split(' ').map(n => n[0]).join('').toUpperCase();
+        technicianViewPhoto.innerHTML = initials;
+    }
 
     document.getElementById('technicianViewName').textContent = tech.name;
     document.getElementById('technicianViewSpecialty').textContent = tech.specialty;
@@ -1020,6 +1452,7 @@ function viewTechnicianDetails(tech) {
     document.getElementById('technicianViewExperience').textContent = tech.experience + ' years';
     document.getElementById('technicianViewRate').textContent = 'UGX ' + parseFloat(tech.hourly_rate || tech.rate || 0).toLocaleString() + '/hour';
     document.getElementById('technicianViewEmployment').textContent = tech.employment_type || 'Full-Time';
+    document.getElementById('technicianViewStock').textContent = tech.quantity || tech.available_stock || 0;
 
     document.getElementById('technicianViewEmail').textContent = tech.email;
     document.getElementById('technicianViewPhone1').textContent = tech.phone;
@@ -1053,12 +1486,12 @@ function viewTechnicianDetails(tech) {
     document.getElementById('technicianViewCertifications').innerHTML = certs.map(cert => `<span class="badge bg-success me-1 mb-1">${cert.trim()}</span>`).join('');
     document.getElementById('technicianViewLanguages').innerHTML = languages.map(lang => `<span class="badge bg-light text-dark me-1 mb-1">${lang.trim()}</span>`).join('');
     document.getElementById('technicianViewTraining').innerHTML = `<span class="text-muted">${tech.training || 'Advanced Technical Training'}</span>`;
-    
+
     document.getElementById('technicianViewOwnTools').textContent = tech.own_tools || 'Yes';
     document.getElementById('technicianViewVehicle').textContent = tech.has_vehicle || 'No';
     document.getElementById('technicianViewEquipmentList').innerHTML = `<span class="text-muted">${tech.equipment_list || 'Multimeter, Oscilloscope, Soldering Station'}</span>`;
     document.getElementById('technicianViewServiceAreas').innerHTML = `<span class="badge bg-info">${tech.service_areas || tech.location}</span>`;
-    
+
     document.getElementById('technicianViewJobsCompleted').textContent = tech.jobs_completed || 0;
     document.getElementById('technicianViewRating').textContent = tech.rating || '5.0';
     document.getElementById('technicianViewResponseTime').textContent = tech.response_time || '2-4hrs';
@@ -1072,18 +1505,41 @@ function viewTechnicianDetails(tech) {
 // View appliance details
 async function fetchAppliancePartsCount(applianceId) {
     try {
-        const response = await fetch('/api/parts');
-        const parts = await response.json();
-        return parts.filter(part => part.applianceType && part.applianceType.toLowerCase().includes(applianceId)).length;
+        const appliancesResponse = await fetch('/api/appliances');
+        const allAppliances = await appliancesResponse.json();
+        
+        const currentAppliance = allAppliances.find(a => a.id == applianceId);
+        if (!currentAppliance) return 0;
+        
+        const sameModelAvailableCount = allAppliances.filter(a => 
+            a.id != applianceId && 
+            a.model === currentAppliance.model && 
+            a.status === 'Available'
+        ).length;
+        
+        const applianceQuantity = parseInt(currentAppliance.quantity) || 0;
+        
+        return sameModelAvailableCount + applianceQuantity;
     } catch (error) {
+        console.error('Error fetching appliance parts count:', error);
         return 0;
     }
 }
 
-function viewApplianceDetails(id, name, brand, model, power, sku, status, description, icon, color, price, created_at, partsCount) {
+function viewApplianceDetails(id, name, brand, model, power, sku, status, description, icon, color, price, created_at, partsCount, image, appliance) {
     const applianceViewIcon = document.getElementById('applianceViewIcon');
-    applianceViewIcon.innerHTML = `<i class="fas fa-${icon || 'tools'}"></i>`;
-    applianceViewIcon.className = `bg-${color || 'primary'} rounded d-inline-flex align-items-center justify-content-center text-white`;
+    
+    if (image) {
+        applianceViewIcon.innerHTML = `<img src="/storage/${image}" alt="${name}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
+        applianceViewIcon.className = 'rounded d-inline-flex align-items-center justify-content-center';
+        applianceViewIcon.style.width = '100%';
+        applianceViewIcon.style.height = '200px';
+    } else {
+        applianceViewIcon.innerHTML = `<i class="fas fa-${icon || 'tools'}"></i>`;
+        applianceViewIcon.className = `bg-${color || 'primary'} rounded d-inline-flex align-items-center justify-content-center text-white`;
+        applianceViewIcon.style.width = '80px';
+        applianceViewIcon.style.height = '80px';
+    }
 
     document.getElementById('applianceViewImageName').textContent = name;
 
@@ -1110,7 +1566,7 @@ function viewApplianceDetails(id, name, brand, model, power, sku, status, descri
     const priceElement = document.getElementById('applianceViewPrice');
     const priceTextElement = priceElement.querySelector('.price-text');
     if (price && parseFloat(price) > 0) {
-        priceTextElement.textContent = 'UGX ' + parseFloat(price).toLocaleString();
+        priceTextElement.textContent = 'Price: UGX ' + parseFloat(price).toLocaleString();
         priceElement.className = 'badge bg-primary mb-3';
     } else {
         priceTextElement.textContent = 'Not Set';
@@ -1120,6 +1576,17 @@ function viewApplianceDetails(id, name, brand, model, power, sku, status, descri
     document.getElementById('applianceViewId').textContent = `#${id}`;
     document.getElementById('applianceViewCreated').textContent = new Date(created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     document.getElementById('applianceViewPartsCount').textContent = partsCount || 0;
+
+    // Add edit button for admin users
+    const editBtn = document.getElementById('applianceEditBtn');
+    if (editBtn && currentUser && currentUser.role === 'admin') {
+        editBtn.style.display = 'inline-block';
+        editBtn.onclick = () => {
+            applianceViewModal.hide();
+            const appliance = appliancesData.find(a => a.id === id);
+            if (appliance) editAppliance(appliance);
+        };
+    }
 
     const applianceViewModal = new bootstrap.Modal(document.getElementById('applianceViewModal'));
     applianceViewModal.show();
@@ -1149,40 +1616,109 @@ function printTechnicianProfile() {
     window.print();
 }
 
-// Open technician form modal for add/edit
-function openTechnicianForm(initials, firstName, middleName, lastName, email, phone, specialty, location, experience, license) {
+// Open technician edit modal with pre-filled data
+function openTechnicianEditModal(tech) {
     const modal = document.getElementById('technicianModal');
     const form = document.getElementById('technicianForm');
     const modalTitle = document.getElementById('technicianModalLabel');
 
-    // Set modal title
-    modalTitle.innerHTML = '<i class="fas fa-user-edit me-2"></i>Edit Technician';
+    modalTitle.innerHTML = '<i class="fas fa-user-edit me-2"></i>Edit Technician Details';
+    document.getElementById('technicianId').value = tech.id;
 
-    // Populate form fields with technician data
-    document.getElementById('technicianTitle').value = 'Mr.';
-    document.getElementById('technicianFirstName').value = firstName;
-    document.getElementById('technicianMiddleName').value = middleName;
-    document.getElementById('technicianLastName').value = lastName;
-    document.getElementById('technicianEmail').value = email;
-    document.getElementById('technicianPhone1').value = phone;
-    document.getElementById('technicianSpecialty').value = specialty;
-    document.getElementById('technicianDistrict').value = location;
-    document.getElementById('technicianExperience').value = experience;
-    document.getElementById('technicianLicenseNumber').value = license;
+    // Populate all form fields
+    document.getElementById('technicianTitle').value = tech.title || 'Mr.';
+    document.getElementById('technicianFirstName').value = tech.first_name || tech.name.split(' ')[0] || '';
+    document.getElementById('technicianMiddleName').value = tech.middle_name || '';
+    document.getElementById('technicianLastName').value = tech.last_name || tech.name.split(' ').slice(1).join(' ') || '';
+    document.getElementById('technicianGender').value = tech.gender || 'Male';
+    document.getElementById('technicianDOB').value = tech.date_of_birth || '';
+    document.getElementById('technicianNationality').value = tech.nationality || 'Ugandan';
+    document.getElementById('technicianIDNumber').value = tech.id_number || '';
+    document.getElementById('technicianEmail').value = tech.email;
+    document.getElementById('technicianPhone1').value = tech.phone_1 || tech.phone;
+    document.getElementById('technicianPhone2').value = tech.phone_2 || '';
+    document.getElementById('technicianWhatsapp').value = tech.whatsapp || '';
+    document.getElementById('technicianEmergencyContact').value = tech.emergency_contact || '';
+    document.getElementById('technicianEmergencyPhone').value = tech.emergency_phone || '';
+    document.getElementById('technicianCountry').value = tech.country || 'Uganda';
+    document.getElementById('technicianRegion').value = tech.region || 'Central';
+    document.getElementById('technicianDistrict').value = tech.district || tech.location || '';
+    document.getElementById('technicianSubCounty').value = tech.sub_county || '';
+    document.getElementById('technicianParish').value = tech.parish || '';
+    document.getElementById('technicianVillage').value = tech.village || '';
+    document.getElementById('technicianPostalCode').value = tech.postal_code || '';
+    document.getElementById('technicianSpecialty').value = tech.specialty;
+    document.getElementById('technicianSubSpecialty').value = tech.sub_specialty || '';
+    document.getElementById('technicianLicenseNumber').value = tech.license_number || tech.license || '';
+    document.getElementById('technicianLicenseExpiry').value = tech.license_expiry || '';
+    document.getElementById('technicianExperience').value = tech.experience;
+    document.getElementById('technicianHourlyRate').value = tech.hourly_rate || tech.rate || '';
+    document.getElementById('technicianDailyRate').value = tech.daily_rate || '';
+    document.getElementById('technicianStatus').value = tech.status || 'Available';
+    document.getElementById('technicianEmploymentType').value = tech.employment_type || 'Full-Time';
+    document.getElementById('technicianStartDate').value = tech.start_date || '';
+    document.getElementById('technicianSkills').value = Array.isArray(tech.skills) ? tech.skills.join(', ') : (tech.skills || '');
+    document.getElementById('technicianCertifications').value = Array.isArray(tech.certifications) ? tech.certifications.join(', ') : (tech.certifications || '');
+    document.getElementById('technicianTraining').value = tech.training || '';
+    document.getElementById('technicianLanguages').value = tech.languages || '';
+    document.getElementById('technicianOwnTools').value = tech.own_tools || 'Yes';
+    document.getElementById('technicianVehicle').value = tech.has_vehicle || 'No';
+    document.getElementById('technicianVehicleType').value = tech.vehicle_type || '';
+    document.getElementById('technicianEquipmentList').value = tech.equipment_list || '';
+    document.getElementById('technicianServiceAreas').value = tech.service_areas || '';
+    document.getElementById('technicianPreviousEmployer').value = tech.previous_employer || '';
+    document.getElementById('technicianPreviousPosition').value = tech.previous_position || '';
+    document.getElementById('technicianYearsAtPrevious').value = tech.years_at_previous || '';
+    document.getElementById('technicianReferenceName').value = tech.reference_name || '';
+    document.getElementById('technicianReferencePhone').value = tech.reference_phone || '';
+    document.getElementById('technicianNotes').value = tech.notes || '';
+    document.getElementById('technicianMedicalConditions').value = tech.medical_conditions || '';
 
-    // Set default values for other fields
-    document.getElementById('technicianGender').value = 'Male';
-    document.getElementById('technicianCountry').value = 'Uganda';
-    document.getElementById('technicianRegion').value = 'Central';
-    document.getElementById('technicianStatus').value = 'Available';
-    document.getElementById('technicianEmploymentType').value = 'Full-Time';
-    document.getElementById('technicianOwnTools').value = 'Yes';
-    document.getElementById('technicianVehicle').value = 'No';
-    document.getElementById('technicianSkills').value = getSkillsBySpecialty(specialty);
-    document.getElementById('technicianCertifications').value = getCertificationsBySpecialty(specialty);
-
-    // Show the modal
+    const technicianModal = new bootstrap.Modal(modal);
     technicianModal.show();
+}
+
+// Edit my profile function
+async function editMyProfile(type) {
+    // Ensure we have current user
+    if (!currentUser) {
+        try {
+            const response = await fetch('/user');
+            if (response.ok) {
+                currentUser = await response.json();
+            } else {
+                showNotification('Please login first', 'error');
+                return;
+            }
+        } catch (error) {
+            showNotification('Please login first', 'error');
+            return;
+        }
+    }
+
+    if (type === 'trainer' && currentUser.role === 'trainer') {
+        // Ensure trainers data is loaded
+        if (!trainersData || trainersData.length === 0) {
+            await loadTrainersData();
+        }
+        const myProfile = trainersData.find(t => t.email === currentUser.email);
+        if (myProfile) {
+            openTrainerEditModal(myProfile);
+        } else {
+            showNotification('Profile not found', 'error');
+        }
+    } else if (type === 'technician' && currentUser.role === 'technician') {
+        // Ensure technicians data is loaded
+        if (!techniciansData || techniciansData.length === 0) {
+            await loadTechniciansData();
+        }
+        const myProfile = techniciansData.find(t => t.email === currentUser.email);
+        if (myProfile) {
+            openTechnicianEditModal(myProfile);
+        } else {
+            showNotification('Profile not found', 'error');
+        }
+    }
 }
 
 // Get skills by specialty
@@ -1304,117 +1840,43 @@ function setupEventListeners() {
     }
 
 
-    // Chat events
-    chatButton.addEventListener('click', async () => {
-        chatModal.show();
-        if (!chatId) {
-            await startChat();
-        } else {
-            await loadMessages();
-        }
-        // Start polling for new messages
-        if (!messageInterval) {
-            messageInterval = setInterval(loadMessages, 3000); // Poll every 3 seconds
-        }
-        // Request notification permission
-        if (Notification.permission === 'default') {
-            Notification.requestPermission();
-        }
-    });
 
-    sendMessageBtn.addEventListener('click', () => sendMessage());
-    chatMessageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
-    });
-
-    attachBtn.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            let type = 'document';
-            if (file.type.startsWith('image/')) type = 'image';
-            else if (file.type.startsWith('video/')) type = 'video';
-            else if (file.type.startsWith('audio/')) type = 'audio';
-            sendMessage(type, file);
-        }
-    });
-
-    emojiBtn.addEventListener('click', () => {
-        emojiPicker.classList.toggle('d-none');
-    });
-
-    emojiPicker.addEventListener('click', (e) => {
-        if (e.target.textContent) {
-            chatMessageInput.value += e.target.textContent;
-            emojiPicker.classList.add('d-none');
-        }
-    });
-
-    voiceBtn.addEventListener('click', () => {
-        voiceRecorder.classList.toggle('d-none');
-    });
-
-    recordBtn.addEventListener('click', startRecording);
-    stopRecordBtn.addEventListener('click', stopRecording);
-
-    gifBtn.addEventListener('click', () => {
-        gifPicker.classList.toggle('d-none');
-    });
-
-    gifSearch.addEventListener('input', debounce(searchGifs, 500));
-
-    locationBtn.addEventListener('click', shareLocation);
-
-    contactBtn.addEventListener('click', () => {
-        const name = prompt('Contact Name:');
-        const phone = prompt('Contact Phone:');
-        if (name && phone) {
-            sendContact(name, phone);
-        }
-    });
-
-    searchBtn.addEventListener('click', searchMessages);
-
-    // Stop polling when chat modal is closed
-    document.getElementById('chatModal').addEventListener('hidden.bs.modal', () => {
-        if (messageInterval) {
-            clearInterval(messageInterval);
-            messageInterval = null;
-        }
-    });
 
     // Sidebar navigation
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
+            const href = link.getAttribute('href');
+            // Don't prevent default for external links (not starting with #)
+            if (!href || !href.startsWith('#')) {
+                return; // Let the browser handle the navigation
+            }
             e.preventDefault();
-            const targetId = link.getAttribute('href').substring(1);
+            const targetId = href.substring(1);
 
             // Remove active class from all links
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             // Add active to clicked link
             link.classList.add('active');
 
-            if (targetId === 'dashboard') {
+            if (targetId === 'dashboard-section') {
                 document.getElementById('dashboard-section').style.display = 'block';
                 document.getElementById('inventory').style.display = 'none';
                 document.getElementById('appliances').style.display = 'none';
                 document.getElementById('trainers').style.display = 'none';
                 document.getElementById('qualified-technicians').style.display = 'none';
                 document.getElementById('reports').style.display = 'none';
+                document.getElementById('settings').style.display = 'none';
                 window.scrollTo(0, 0);
-            } else if (targetId === 'inventory') {
+            } else if (targetId === 'inventory' || targetId === 'inventory-stats') {
                 document.getElementById('dashboard-section').style.display = 'none';
                 document.getElementById('inventory').style.display = 'block';
                 document.getElementById('appliances').style.display = 'none';
                 document.getElementById('trainers').style.display = 'none';
                 document.getElementById('qualified-technicians').style.display = 'none';
                 document.getElementById('reports').style.display = 'none';
-                const targetElement = document.getElementById(targetId);
-                if (targetElement) {
-                    targetElement.scrollIntoView({ behavior: 'smooth' });
-                }
+                document.getElementById('settings').style.display = 'none';
+                document.getElementById('inventory').scrollIntoView({ behavior: 'smooth' });
+                if (!dataLoaded.inventory) loadInventoryData();
             } else if (targetId === 'appliances') {
                 document.getElementById('dashboard-section').style.display = 'none';
                 document.getElementById('inventory').style.display = 'none';
@@ -1429,6 +1891,10 @@ function setupEventListeners() {
                 // Load appliances data when section is opened
                 loadAppliancesData();
             } else if (targetId === 'trainers') {
+                if (!hasPermission('trainers')) {
+                    alert('Access denied. You do not have permission to view this section.');
+                    return;
+                }
                 document.getElementById('dashboard-section').style.display = 'none';
                 document.getElementById('inventory').style.display = 'none';
                 document.getElementById('appliances').style.display = 'none';
@@ -1442,6 +1908,10 @@ function setupEventListeners() {
                 // Load trainers data when section is opened
                 loadTrainersData();
             } else if (targetId === 'qualified-technicians') {
+                if (!hasPermission('qualified-technicians')) {
+                    alert('Access denied. You do not have permission to view this section.');
+                    return;
+                }
                 document.getElementById('dashboard-section').style.display = 'none';
                 document.getElementById('inventory').style.display = 'none';
                 document.getElementById('appliances').style.display = 'none';
@@ -1454,6 +1924,10 @@ function setupEventListeners() {
                 }
                 loadTechniciansData();
             } else if (targetId === 'reports') {
+                if (!hasPermission('reports')) {
+                    alert('Access denied. You do not have permission to view this section.');
+                    return;
+                }
                 document.getElementById('dashboard-section').style.display = 'none';
                 document.getElementById('inventory').style.display = 'none';
                 document.getElementById('appliances').style.display = 'none';
@@ -1467,6 +1941,10 @@ function setupEventListeners() {
                 }
                 loadReportsData();
             } else if (targetId === 'settings') {
+                if (!hasPermission('settings')) {
+                    alert('Access denied. You do not have permission to view this section.');
+                    return;
+                }
                 document.getElementById('dashboard-section').style.display = 'none';
                 document.getElementById('inventory').style.display = 'none';
                 document.getElementById('appliances').style.display = 'none';
@@ -1527,7 +2005,6 @@ function createFooter() {
     const footer = document.createElement('div');
     footer.id = 'customFooter';
     footer.style.position = 'fixed';
-    footer.style.left = '160px';
     footer.style.bottom = '0';
     footer.style.right = '0';
     footer.style.height = '30px';
@@ -1537,9 +2014,20 @@ function createFooter() {
     footer.style.alignItems = 'center';
     footer.style.justifyContent = 'center';
     footer.style.padding = '0 10px';
-    footer.style.fontSize = '14px';
+    footer.style.fontSize = 'clamp(0.6rem, 2.5vw, 1rem)';
     footer.style.zIndex = '1050';
+    footer.style.whiteSpace = 'nowrap';
+    footer.style.overflow = 'hidden';
     footer.textContent = 'E-Cooking Inventory Management System | CREEC © 2026. All rights reserved.';
+
+    // Responsive left positioning
+    const mediaQuery = window.matchMedia('(min-width: 992px)');
+    function handleScreenChange(e) {
+        footer.style.left = e.matches ? '160px' : '0';
+    }
+    mediaQuery.addListener(handleScreenChange);
+    handleScreenChange(mediaQuery);
+
     document.body.appendChild(footer);
 }
 
@@ -1825,326 +2313,54 @@ function renderBrandAvailabilityChart() {
     });
 }
 
-// Chat functions
-async function startChat() {
-    try {
-        const response = await fetch('/api/chat/start', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({ user_name: userName })
-        });
-        const data = await response.json();
-        chatId = data.chat_id;
-        await loadMessages();
-    } catch (error) {
-        console.error('Error starting chat:', error);
-    }
-}
 
-async function sendMessage(type = 'text', file = null, message = null, gifUrl = null) {
-    if (!chatId) return;
-
-    const formData = new FormData();
-    formData.append('chat_id', chatId);
-    formData.append('sender', 'user');
-    formData.append('type', type);
-
-    if (type === 'text') {
-        const msg = message || chatMessageInput.value.trim();
-        if (!msg) return;
-        formData.append('message', msg);
-        chatMessageInput.value = '';
-    } else if (type === 'gif') {
-        formData.append('gif_url', gifUrl);
-    } else if (file) {
-        formData.append('file', file);
-    }
-
-    try {
-        const response = await fetch('/api/chat/send', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: formData
-        });
-        await loadMessages();
-        notifyNewMessage();
-    } catch (error) {
-        console.error('Error sending message:', error);
-    }
-}
-
-async function loadMessages() {
-    if (!chatId) return;
-
-    try {
-        const response = await fetch(`/api/chat/messages?chat_id=${chatId}`);
-        const messages = await response.json();
-        renderMessages(messages);
-    } catch (error) {
-        console.error('Error loading messages:', error);
-    }
-}
-
-function renderMessages(messages) {
-    chatMessages.innerHTML = '';
-    messages.forEach(message => {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `message ${message.sender === 'user' ? 'text-end' : 'text-start'} mb-2`;
-        messageDiv.setAttribute('data-message-id', message.id);
-
-        let content = '';
-        if (message.type === 'text') {
-            content = message.message;
-        } else if (message.type === 'image') {
-            content = `<img src="/storage/${message.file_path}" class="img-fluid rounded" style="max-width: 200px;">`;
-        } else if (message.type === 'video') {
-            content = `<video controls class="rounded" style="max-width: 200px;"><source src="/storage/${message.file_path}"></video>`;
-        } else if (message.type === 'audio') {
-            content = `<audio controls><source src="/storage/${message.file_path}"></audio>`;
-        } else if (message.type === 'document') {
-            content = `<a href="/storage/${message.file_path}" target="_blank"><i class="fas fa-file"></i> ${message.file_name}</a>`;
-        } else if (message.type === 'location') {
-            content = `<a href="https://www.google.com/maps?q=${message.location_lat},${message.location_lng}" target="_blank"><i class="fas fa-map-marker-alt"></i> Location</a>`;
-        } else if (message.type === 'contact') {
-            content = `<i class="fas fa-user"></i> ${message.contact_name} - ${message.contact_phone}`;
-        } else if (message.type === 'gif') {
-            content = `<img src="${message.gif_url}" class="img-fluid rounded" style="max-width: 200px;">`;
-        }
-
-        if (message.reply_to) {
-            content = `<div class="border-start border-3 ps-2 mb-1 text-muted small">${message.reply_to.message}</div>` + content;
-        }
-
-        let statusIcon = '';
-        if (message.sender === 'user') {
-            if (message.status === 'sent') statusIcon = '<i class="fas fa-check text-muted"></i>';
-            else if (message.status === 'delivered') statusIcon = '<i class="fas fa-check-double text-muted"></i>';
-            else if (message.status === 'read') statusIcon = '<i class="fas fa-check-double text-primary"></i>';
-        }
-
-        messageDiv.innerHTML = `
-            <div class="d-inline-block p-2 rounded ${message.sender === 'user' ? 'bg-primary text-white' : 'bg-light text-dark'} position-relative">
-                <small class="d-block fw-bold">${message.sender === 'user' ? 'You' : 'Support'}</small>
-                ${content}
-                <small class="d-block text-muted">${new Date(message.created_at).toLocaleTimeString()} ${statusIcon}</small>
-                ${message.reaction ? `<div class="reaction">${message.reaction}</div>` : ''}
-                <div class="message-actions d-none">
-                    <button class="btn btn-sm btn-outline-secondary react-btn" title="React"><i class="fas fa-smile"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary pin-btn" title="Pin"><i class="fas fa-thumbtack"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary forward-btn" title="Forward"><i class="fas fa-share"></i></button>
-                    <button class="btn btn-sm btn-outline-secondary delete-btn" title="Delete"><i class="fas fa-trash"></i></button>
-                </div>
-            </div>
-        `;
-
-        // Add event listeners for reactions and deletion
-        messageDiv.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            const actions = messageDiv.querySelector('.message-actions');
-            actions.classList.toggle('d-none');
-        });
-
-        messageDiv.querySelector('.react-btn')?.addEventListener('click', () => reactToMessage(message.id, '👍'));
-        messageDiv.querySelector('.pin-btn')?.addEventListener('click', () => pinMessage(message.id));
-        messageDiv.querySelector('.forward-btn')?.addEventListener('click', () => forwardMessage(message.id));
-        messageDiv.querySelector('.delete-btn')?.addEventListener('click', () => deleteMessage(message.id));
-
-        chatMessages.appendChild(messageDiv);
-    });
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-
-async function reactToMessage(messageId, reaction) {
-    try {
-        await fetch('/api/chat/react', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({ message_id: messageId, reaction: reaction })
-        });
-        await loadMessages();
-    } catch (error) {
-        console.error('Error reacting to message:', error);
-    }
-}
-
-async function deleteMessage(messageId) {
-    try {
-        await fetch('/api/chat/delete', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({ message_id: messageId })
-        });
-        await loadMessages();
-    } catch (error) {
-        console.error('Error deleting message:', error);
-    }
-}
-
-function notifyNewMessage() {
-    if (Notification.permission === 'granted') {
-        new Notification('New message', { body: 'You have a new message in chat' });
-    }
-}
-
-let mediaRecorder;
-let audioChunks = [];
-
-function startRecording() {
-    navigator.mediaDevices.getUserMedia({ audio: true })
-        .then(stream => {
-            mediaRecorder = new MediaRecorder(stream);
-            mediaRecorder.start();
-            audioChunks = [];
-
-            mediaRecorder.addEventListener('dataavailable', event => {
-                audioChunks.push(event.data);
-            });
-
-            mediaRecorder.addEventListener('stop', () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const audioFile = new File([audioBlob], 'voice_message.wav', { type: 'audio/wav' });
-                sendMessage('audio', audioFile);
-            });
-
-            recordBtn.classList.add('d-none');
-            stopRecordBtn.classList.remove('d-none');
-        });
-}
-
-function stopRecording() {
-    mediaRecorder.stop();
-    recordBtn.classList.remove('d-none');
-    stopRecordBtn.classList.add('d-none');
-}
-
-async function searchGifs() {
-    const query = gifSearch.value;
-    if (!query) return;
-
-    // For demo, use placeholder GIFs
-    const gifs = [
-        'https://media.giphy.com/media/3o7TKz9bX9Z9Z9Z9Z9/giphy.gif',
-        'https://media.giphy.com/media/l0MYJnJQ4EiYLxvQ8/giphy.gif',
-    ];
-
-    gifResults.innerHTML = '';
-    gifs.forEach(gif => {
-        const img = document.createElement('img');
-        img.src = gif;
-        img.className = 'm-1';
-        img.style.width = '100px';
-        img.style.cursor = 'pointer';
-        img.addEventListener('click', () => sendGif(gif));
-        gifResults.appendChild(img);
-    });
-}
-
-async function sendGif(gifUrl) {
-    await sendMessage('gif', null, null, gifUrl);
-    gifPicker.classList.add('d-none');
-}
-
-async function shareLocation() {
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            await sendLocation(lat, lng);
-        });
-    }
-}
-
-async function sendLocation(lat, lng) {
-    try {
-        const response = await fetch('/api/chat/location', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({ chat_id: chatId, lat: lat, lng: lng })
-        });
-        await loadMessages();
-    } catch (error) {
-        console.error('Error sending location:', error);
-    }
-}
-
-async function sendContact(name, phone) {
-    try {
-        const response = await fetch('/api/chat/contact', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({ chat_id: chatId, name: name, phone: phone })
-        });
-        await loadMessages();
-    } catch (error) {
-        console.error('Error sending contact:', error);
-    }
-}
-
-async function searchMessages() {
-    const query = chatSearchInput.value.trim();
-    if (!query) return;
-
-    try {
-        const response = await fetch(`/api/chat/search?chat_id=${chatId}&query=${encodeURIComponent(query)}`);
-        const messages = await response.json();
-        renderMessages(messages);
-    } catch (error) {
-        console.error('Error searching messages:', error);
-    }
-}
-
-async function pinMessage(messageId) {
-    try {
-        await fetch('/api/chat/pin', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({ message_id: messageId })
-        });
-        await loadMessages();
-    } catch (error) {
-        console.error('Error pinning message:', error);
-    }
-}
-
-async function forwardMessage(messageId) {
-    // For simplicity, forward to same chat
-    try {
-        await fetch('/api/chat/forward', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-            },
-            body: JSON.stringify({ message_id: messageId, chat_id: chatId })
-        });
-        await loadMessages();
-    } catch (error) {
-        console.error('Error forwarding message:', error);
-    }
-}
 
 // Initialize the application
 document.addEventListener('DOMContentLoaded', init);
+
+// Handle hash changes
+window.addEventListener('hashchange', () => {
+    const hash = window.location.hash;
+    if (hash === '#inventory-stats' || hash === '#inventory') {
+        ['dashboard-section', 'appliances', 'trainers', 'qualified-technicians', 'reports', 'settings'].forEach(id => {
+            document.getElementById(id).style.display = 'none';
+        });
+        document.getElementById('inventory').style.display = 'block';
+        document.getElementById('inventory').scrollIntoView({ behavior: 'smooth' });
+        if (!dataLoaded.inventory) loadInventoryData();
+    }
+});
+
+// Update live clock
+function updateLiveClock() {
+    const now = new Date();
+
+    // Large screen - two lines
+    const dateElement = document.getElementById('currentDate');
+    if (dateElement) {
+        dateElement.textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    const timeElement = document.getElementById('currentTime');
+    if (timeElement) {
+        timeElement.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+    }
+
+    // Small screen - one line
+    const dateSmallElement = document.getElementById('currentDateSmall');
+    if (dateSmallElement) {
+        dateSmallElement.textContent = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    const timeSmallElement = document.getElementById('currentTimeSmall');
+    if (timeSmallElement) {
+        timeSmallElement.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    }
+}
+
+// Start live clock
+setInterval(updateLiveClock, 1000);
+updateLiveClock();
 
 // Load statistics from API
 async function loadStatistics() {
@@ -2172,7 +2388,7 @@ async function loadTrainerStatistics() {
 function updateStatisticsCards(statistics, overviewStats) {
     // Update Total Parts Group
     document.getElementById('totalParts').textContent = statistics.total_parts;
-    
+
     // Update sub-cards for Total Parts
     const totalPartsCards = document.querySelectorAll('.stat-group')[0].querySelectorAll('.stat-number');
     if (totalPartsCards.length >= 4) {
@@ -2183,7 +2399,7 @@ function updateStatisticsCards(statistics, overviewStats) {
 
     // Update Available Parts Group
     document.getElementById('availableParts').textContent = statistics.available_parts;
-    
+
     // Update sub-cards for Available Parts
     const availablePartsCards = document.querySelectorAll('.stat-group')[1].querySelectorAll('.stat-number');
     if (availablePartsCards.length >= 4) {
@@ -2229,7 +2445,7 @@ async function loadReportsData() {
             trainersData.length > 0 ? Promise.resolve(trainersData) : fetch('/api/trainers').then(r => r.json()),
             techniciansData.length > 0 ? Promise.resolve(techniciansData) : fetch('/api/technicians').then(r => r.json())
         ]);
-        
+
         dataLoaded.reports = true;
         updateReportMetrics(parts, appliances, trainers, technicians);
         renderReportCharts(parts, appliances);
@@ -2243,7 +2459,7 @@ function updateReportMetrics(parts, appliances, trainers, technicians) {
     const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
     document.getElementById('reportDate').textContent = reportDate;
     document.getElementById('reportFooterDate').textContent = reportDate;
-    
+
     const availableParts = parts.filter(p => p.availability).length;
     const brands = [...new Set(parts.flatMap(p => p.brands))];
     const availabilityRate = parts.length > 0 ? ((availableParts / parts.length) * 100).toFixed(1) : 0;
@@ -2291,7 +2507,7 @@ function updateReportMetrics(parts, appliances, trainers, technicians) {
 function renderReportCharts(parts, appliances) {
     const partsByAppliance = {};
     parts.forEach(p => partsByAppliance[p.applianceType] = (partsByAppliance[p.applianceType] || 0) + 1);
-    
+
     new Chart(document.getElementById('reportPartsChart'), {
         type: 'bar',
         data: {
@@ -2303,7 +2519,7 @@ function renderReportCharts(parts, appliances) {
 
     const available = parts.filter(p => p.availability).length;
     const total = parts.length;
-    
+
     new Chart(document.getElementById('reportAvailabilityChart'), {
         type: 'doughnut',
         data: {
@@ -2323,7 +2539,7 @@ function renderReportCharts(parts, appliances) {
     const appStatus = {};
     appliances.forEach(a => appStatus[a.status] = (appStatus[a.status] || 0) + 1);
     const appTotal = Object.values(appStatus).reduce((a, b) => a + b, 0);
-    
+
     new Chart(document.getElementById('reportAppliancesChart'), {
         type: 'pie',
         data: {
@@ -2343,7 +2559,7 @@ function renderReportCharts(parts, appliances) {
     const brands = {};
     parts.forEach(p => p.brands.forEach(b => brands[b] = (brands[b] || 0) + 1));
     const topBrands = Object.entries(brands).sort((a, b) => b[1] - a[1]).slice(0, 5);
-    
+
     new Chart(document.getElementById('reportBrandsChart'), {
         type: 'bar',
         data: {
@@ -2425,15 +2641,440 @@ function clearCache() {
 
 
 // Login form handler
-document.getElementById('loginForm')?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const email = document.getElementById('loginEmail').value;
-    const password = document.getElementById('loginPassword').value;
-    
-    // Simple validation (replace with actual authentication)
-    if (email && password) {
-        alert('Login functionality will be implemented with backend authentication.');
-        // Close modal
-        bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+document.addEventListener('DOMContentLoaded', () => {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            // Show loading state
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Logging in...';
+            submitBtn.disabled = true;
+
+            try {
+                const result = await login(email, password);
+
+                if (result.success) {
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+                    modal.hide();
+
+                    // Show success message
+                    showNotification(`Welcome ${result.user.name}! Logged in as ${result.user.role.toUpperCase()}`, 'success');
+
+                    // Reset form
+                    loginForm.reset();
+
+                    // Redirect to dashboard immediately
+                    window.location.href = '/';
+                } else {
+                    showNotification(result.message || 'Login failed', 'error');
+                }
+            } catch (error) {
+                showNotification('Login failed. Please try again.', 'error');
+            } finally {
+                // Reset button state
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }
+        });
     }
+
+    // Trainer form handler
+    const trainerForm = document.getElementById('trainerForm');
+    if (trainerForm) {
+        trainerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveTrainerData();
+        });
+    }
+
+    // Technician form handler
+    const technicianForm = document.getElementById('technicianForm');
+    if (technicianForm) {
+        technicianForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await saveTechnicianData();
+        });
+    }
+
+    // Add click handlers for demo credentials
+    addDemoCredentialHandlers();
 });
+
+// Save trainer data
+async function saveTrainerData() {
+    const trainerId = document.getElementById('trainerId').value;
+    const isEdit = !!trainerId;
+
+    const data = {
+        first_name: document.getElementById('trainerFirstName').value,
+        middle_name: document.getElementById('trainerMiddleName').value,
+        last_name: document.getElementById('trainerLastName').value,
+        gender: document.getElementById('trainerGender').value,
+        date_of_birth: document.getElementById('trainerDOB').value,
+        nationality: document.getElementById('trainerNationality').value,
+        id_number: document.getElementById('trainerIDNumber').value,
+        email: document.getElementById('trainerEmail').value,
+        phone: document.getElementById('trainerPhone').value,
+        whatsapp: document.getElementById('trainerWhatsapp').value,
+        emergency_contact: document.getElementById('trainerEmergencyContact').value,
+        emergency_phone: document.getElementById('trainerEmergencyPhone').value,
+        country: document.getElementById('trainerCountry').value,
+        region: document.getElementById('trainerRegion').value,
+        district: document.getElementById('trainerDistrict').value,
+        sub_county: document.getElementById('trainerSubCounty').value,
+        village: document.getElementById('trainerVillage').value,
+        postal_code: document.getElementById('trainerPostalCode').value,
+        specialty: document.getElementById('trainerSpecialty').value,
+        experience: document.getElementById('trainerExperience').value,
+        license_number: document.getElementById('trainerLicenseNumber').value,
+        hourly_rate: document.getElementById('trainerHourlyRate').value,
+        daily_rate: document.getElementById('trainerDailyRate').value,
+        status: document.getElementById('trainerStatus').value,
+        skills: document.getElementById('trainerSkills').value,
+        qualifications: document.getElementById('trainerQualifications').value,
+        certifications: document.getElementById('trainerCertifications').value,
+        languages: document.getElementById('trainerLanguages').value,
+        notes: document.getElementById('trainerNotes').value
+    };
+
+    try {
+        const response = await fetch(`/api/trainers${isEdit ? `/${trainerId}` : ''}`, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            showNotification('Trainer updated successfully!', 'success');
+            trainerModal.hide();
+            dataLoaded.trainers = false;
+            await loadTrainersData();
+        } else {
+            const errors = await response.json();
+            showNotification('Error saving trainer: ' + (errors.message || JSON.stringify(errors.errors)), 'error');
+        }
+    } catch (error) {
+        console.error('Error saving trainer:', error);
+        showNotification('Error saving trainer. Please try again.', 'error');
+    }
+}
+
+// Save technician data
+async function saveTechnicianData() {
+    const technicianId = document.getElementById('technicianId').value;
+    const isEdit = !!technicianId;
+
+    const data = {
+        title: document.getElementById('technicianTitle').value,
+        first_name: document.getElementById('technicianFirstName').value,
+        middle_name: document.getElementById('technicianMiddleName').value,
+        last_name: document.getElementById('technicianLastName').value,
+        gender: document.getElementById('technicianGender').value,
+        date_of_birth: document.getElementById('technicianDOB').value,
+        nationality: document.getElementById('technicianNationality').value,
+        id_number: document.getElementById('technicianIDNumber').value,
+        email: document.getElementById('technicianEmail').value,
+        phone_1: document.getElementById('technicianPhone1').value,
+        phone_2: document.getElementById('technicianPhone2').value,
+        whatsapp: document.getElementById('technicianWhatsapp').value,
+        emergency_contact: document.getElementById('technicianEmergencyContact').value,
+        emergency_phone: document.getElementById('technicianEmergencyPhone').value,
+        country: document.getElementById('technicianCountry').value,
+        region: document.getElementById('technicianRegion').value,
+        district: document.getElementById('technicianDistrict').value,
+        sub_county: document.getElementById('technicianSubCounty').value,
+        parish: document.getElementById('technicianParish').value,
+        village: document.getElementById('technicianVillage').value,
+        postal_code: document.getElementById('technicianPostalCode').value,
+        specialty: document.getElementById('technicianSpecialty').value,
+        sub_specialty: document.getElementById('technicianSubSpecialty').value,
+        license_number: document.getElementById('technicianLicenseNumber').value,
+        license_expiry: document.getElementById('technicianLicenseExpiry').value,
+        experience: document.getElementById('technicianExperience').value,
+        hourly_rate: document.getElementById('technicianHourlyRate').value,
+        daily_rate: document.getElementById('technicianDailyRate').value,
+        status: document.getElementById('technicianStatus').value,
+        employment_type: document.getElementById('technicianEmploymentType').value,
+        start_date: document.getElementById('technicianStartDate').value,
+        skills: document.getElementById('technicianSkills').value,
+        certifications: document.getElementById('technicianCertifications').value,
+        training: document.getElementById('technicianTraining').value,
+        languages: document.getElementById('technicianLanguages').value,
+        own_tools: document.getElementById('technicianOwnTools').value,
+        has_vehicle: document.getElementById('technicianVehicle').value,
+        vehicle_type: document.getElementById('technicianVehicleType').value,
+        equipment_list: document.getElementById('technicianEquipmentList').value,
+        service_areas: document.getElementById('technicianServiceAreas').value,
+        previous_employer: document.getElementById('technicianPreviousEmployer').value,
+        previous_position: document.getElementById('technicianPreviousPosition').value,
+        years_at_previous: document.getElementById('technicianYearsAtPrevious').value,
+        reference_name: document.getElementById('technicianReferenceName').value,
+        reference_phone: document.getElementById('technicianReferencePhone').value,
+        notes: document.getElementById('technicianNotes').value,
+        medical_conditions: document.getElementById('technicianMedicalConditions').value
+    };
+
+    try {
+        const response = await fetch(`/api/technicians${isEdit ? `/${technicianId}` : ''}`, {
+            method: isEdit ? 'PUT' : 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            showNotification('Technician updated successfully!', 'success');
+            const technicianModal = bootstrap.Modal.getInstance(document.getElementById('technicianModal'));
+            technicianModal.hide();
+            dataLoaded.technicians = false;
+            await loadTechniciansData();
+        } else {
+            const errors = await response.json();
+            showNotification('Error saving technician: ' + (errors.message || JSON.stringify(errors.errors)), 'error');
+        }
+    } catch (error) {
+        console.error('Error saving technician:', error);
+        showNotification('Error saving technician. Please try again.', 'error');
+    }
+}
+
+function openSupportChat() {
+    window.open('/chat', 'SupportChat', 'width=1200,height=800,resizable=yes,scrollbars=yes');
+}
+
+function addDemoCredentialHandlers() {
+    // Add click handlers to demo credential sections
+    const demoCredentials = [
+        { email: 'admin@creec.com', password: 'admin123', role: 'Admin' },
+        { email: 'trainer@creec.com', password: 'trainer123', role: 'Trainer' },
+        { email: 'technician@creec.com', password: 'tech123', role: 'Technician' }
+    ];
+
+    // Add click handlers to demo credential areas in modal
+    document.addEventListener('click', (e) => {
+        const target = e.target;
+
+        // Check if clicked on demo credentials area
+        if (target.closest('.alert-warning')) {
+            const alertWarning = target.closest('.alert-warning');
+            const codeElements = alertWarning.querySelectorAll('code');
+
+            // Find which credential set was clicked
+            let clickedCredential = null;
+
+            if (target.textContent.includes('admin@creec.com') || target.closest('div')?.textContent.includes('Admin Access')) {
+                clickedCredential = demoCredentials[0];
+            } else if (target.textContent.includes('trainer@creec.com') || target.closest('div')?.textContent.includes('Trainer Access')) {
+                clickedCredential = demoCredentials[1];
+            } else if (target.textContent.includes('technician@creec.com') || target.closest('div')?.textContent.includes('Technician Access')) {
+                clickedCredential = demoCredentials[2];
+            }
+
+            if (clickedCredential) {
+                // Auto-fill the form
+                const emailInput = document.getElementById('loginEmail');
+                const passwordInput = document.getElementById('loginPassword');
+
+                if (emailInput && passwordInput) {
+                    emailInput.value = clickedCredential.email;
+                    passwordInput.value = clickedCredential.password;
+
+                    // Show feedback
+                    showNotification(`Demo credentials loaded for ${clickedCredential.role}`, 'info');
+
+                    // Focus on login button
+                    const loginBtn = document.querySelector('#loginForm button[type="submit"]');
+                    if (loginBtn) {
+                        loginBtn.focus();
+                    }
+                }
+            }
+        }
+    });
+
+    // Add click handlers to sidebar demo credentials
+    const sidebarCredentials = document.querySelectorAll('.demo-credentials div');
+    sidebarCredentials.forEach((credDiv, index) => {
+        credDiv.style.cursor = 'pointer';
+        credDiv.title = 'Click to use these credentials';
+
+        credDiv.addEventListener('click', () => {
+            // Open login modal
+            const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+            loginModal.show();
+
+            // Wait for modal to open then fill credentials
+            setTimeout(() => {
+                const emailInput = document.getElementById('loginEmail');
+                const passwordInput = document.getElementById('loginPassword');
+
+                if (emailInput && passwordInput && demoCredentials[index]) {
+                    emailInput.value = demoCredentials[index].email;
+                    passwordInput.value = demoCredentials[index].password;
+                    showNotification(`Demo credentials loaded for ${demoCredentials[index].role}`, 'info');
+                }
+            }, 300);
+        });
+    });
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type === 'error' ? 'danger' : type === 'success' ? 'success' : 'info'} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 5000);
+}
+
+
+// Edit appliance function
+function editAppliance(appliance) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'editApplianceModal';
+    modal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="fas fa-edit me-2"></i>Edit Appliance</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="editApplianceForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="editName" value="${appliance.name}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Model</label>
+                            <input type="text" class="form-control" id="editModel" value="${appliance.model || ''}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Power</label>
+                            <input type="text" class="form-control" id="editPower" value="${appliance.power || ''}" placeholder="e.g., 1500W">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Price (UGX)</label>
+                            <input type="number" class="form-control" id="editPrice" value="${appliance.price || ''}" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Quantity in Stock</label>
+                            <input type="number" class="form-control" id="editQuantity" value="${appliance.quantity || 0}" min="0">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select class="form-control" id="editStatus">
+                                <option value="Available" ${appliance.status === 'Available' ? 'selected' : ''}>Available</option>
+                                <option value="In Use" ${appliance.status === 'In Use' ? 'selected' : ''}>In Use</option>
+                                <option value="Maintenance" ${appliance.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Image</label>
+                            <input type="file" class="form-control" id="editImage" accept="image/*">
+                            <small class="text-muted">Leave empty to keep current image</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    const modalInstance = new bootstrap.Modal(modal);
+    modalInstance.show();
+    
+    document.getElementById('editApplianceForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving...';
+        
+        const formData = new FormData();
+        formData.append('_method', 'PUT');
+        formData.append('name', document.getElementById('editName').value);
+        formData.append('model', document.getElementById('editModel').value);
+        formData.append('power', document.getElementById('editPower').value);
+        formData.append('price', document.getElementById('editPrice').value);
+        formData.append('quantity', document.getElementById('editQuantity').value);
+        formData.append('status', document.getElementById('editStatus').value);
+        
+        const imageFile = document.getElementById('editImage').files[0];
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        
+        try {
+            const response = await fetch(`/api/appliances/${appliance.id}`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && result.success) {
+                showNotification('Appliance updated successfully!', 'success');
+                modalInstance.hide();
+                modal.remove();
+                dataLoaded.appliances = false;
+                await loadAppliancesData();
+            } else {
+                showNotification('Error: ' + (result.message || 'Update failed'), 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Save Changes';
+            }
+        } catch (error) {
+            showNotification('Error: ' + error.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Save Changes';
+        }
+    });
+    
+    modal.addEventListener('hidden.bs.modal', () => modal.remove());
+}
+
+
+// Edit part function
+function editPart(partId) {
+    window.location.href = '/admin#parts-management';
+    setTimeout(() => {
+        if (typeof window.editPart !== 'undefined') {
+            window.editPart(partId);
+        }
+    }, 500);
+}

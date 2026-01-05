@@ -3,33 +3,50 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Message extends Model
 {
-    protected $fillable = ['chat_id', 'sender', 'message', 'type', 'file_path', 'file_name', 'file_size', 'status', 'reply_to', 'reaction', 'is_deleted', 'is_pinned', 'forwarded_from', 'location_lat', 'location_lng', 'contact_name', 'contact_phone', 'gif_url', 'poll_options', 'poll_votes'];
+    protected $fillable = [
+        'chat_id',
+        'sender',
+        'sender_name',
+        'receiver_type',
+        'receiver_name',
+        'message',
+        'type',
+        'file_path',
+        'file_name',
+        'file_size',
+        'reply_to',
+        'status',
+        'reaction',
+        'is_deleted',
+        'is_pinned'
+    ];
 
-    public function chat()
+    protected $casts = [
+        'is_read' => 'boolean'
+    ];
+
+    public function chat(): BelongsTo
     {
         return $this->belongsTo(Chat::class);
     }
 
-    public function replyTo()
+    public function sender()
+    {
+        return match($this->sender_type) {
+            'user' => $this->belongsTo(User::class, 'sender_id'),
+            'technician' => $this->belongsTo(Technician::class, 'sender_id'),
+            'trainer' => $this->belongsTo(Trainer::class, 'sender_id'),
+            'admin' => $this->belongsTo(User::class, 'sender_id'),
+            default => null
+        };
+    }
+
+    public function replyTo(): BelongsTo
     {
         return $this->belongsTo(Message::class, 'reply_to');
-    }
-
-    public function replies()
-    {
-        return $this->hasMany(Message::class, 'reply_to');
-    }
-
-    public function forwardedFrom()
-    {
-        return $this->belongsTo(Message::class, 'forwarded_from');
-    }
-
-    public function forwardedMessages()
-    {
-        return $this->hasMany(Message::class, 'forwarded_from');
     }
 }

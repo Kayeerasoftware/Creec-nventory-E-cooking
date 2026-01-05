@@ -9,6 +9,15 @@ use Illuminate\Support\Facades\Validator;
 class TrainerController extends Controller
 {
     /**
+     * Display the trainers page.
+     */
+    public function page()
+    {
+        $user = auth()->user();
+        return view('trainers', compact('user'));
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()
@@ -59,26 +68,32 @@ class TrainerController extends Controller
 
     /**
      * Update the specified resource in storage.
+     * Role-based field restrictions apply.
      */
     public function update(Request $request, string $id)
     {
         $trainer = Trainer::findOrFail($id);
+        $user = auth()->user();
+        $role = $user->role;
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255',
-            'specialty' => 'required|string|max:255',
-            'email' => 'required|email|unique:trainers,email,' . $id,
-            'phone' => 'required|string|max:20',
-            'experience' => 'required|integer|min:0',
-            'qualifications' => 'nullable|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
+        // Define allowed fields per role
+        $allowedFields = $this->getAllowedFields($role);
+
+        // Filter request data to only allowed fields
+        $data = $request->only($allowedFields);
+
+        // Trainers can only update their own record
+        if ($role === 'trainer' && $user->trainer_id !== $trainer->id) {
+            return response()->json(['error' => 'You can only update your own profile'], 403);
+        }
+
+        // Validate only the fields being updated
+        $rules = $this->getValidationRules($allowedFields, $id);
+        $validator = Validator::make($data, $rules);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
-
-        $data = $request->all();
 
         if ($request->hasFile('image')) {
             // Delete old image if exists
@@ -92,7 +107,75 @@ class TrainerController extends Controller
         }
 
         $trainer->update($data);
-        return response()->json($trainer);
+        return response()->json([
+            'message' => 'Trainer updated successfully',
+            'trainer' => $trainer
+        ]);
+    }
+
+    /**
+     * Get allowed fields based on user role
+     */
+    private function getAllowedFields($role)
+    {
+        $fields = [
+            'admin' => [
+                'first_name', 'middle_name', 'last_name', 'gender', 'date_of_birth',
+                'nationality', 'id_number', 'email', 'phone', 'whatsapp',
+                'emergency_contact', 'emergency_phone', 'country', 'region', 'district',
+                'sub_county', 'village', 'postal_code', 'specialty', 'experience',
+                'license_number', 'hourly_rate', 'daily_rate', 'status', 'skills',
+                'qualifications', 'certifications', 'languages', 'notes', 'image'
+            ],
+            'trainer' => [
+                'phone', 'whatsapp', 'emergency_contact', 'emergency_phone',
+                'village', 'postal_code', 'skills', 'qualifications',
+                'certifications', 'languages', 'notes', 'image'
+            ]
+        ];
+
+        return $fields[$role] ?? [];
+    }
+
+    /**
+     * Get validation rules for allowed fields
+     */
+    private function getValidationRules($allowedFields, $trainerId)
+    {
+        $allRules = [
+            'first_name' => 'sometimes|required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'last_name' => 'sometimes|required|string|max:255',
+            'gender' => 'sometimes|required|in:Male,Female',
+            'date_of_birth' => 'nullable|date',
+            'nationality' => 'nullable|string|max:255',
+            'id_number' => 'nullable|string|max:255',
+            'email' => 'sometimes|required|email|unique:trainers,email,' . $trainerId,
+            'phone' => 'sometimes|required|string|max:20',
+            'whatsapp' => 'nullable|string|max:20',
+            'emergency_contact' => 'nullable|string|max:255',
+            'emergency_phone' => 'nullable|string|max:20',
+            'country' => 'sometimes|required|string|max:255',
+            'region' => 'sometimes|required|string|max:255',
+            'district' => 'sometimes|required|string|max:255',
+            'sub_county' => 'nullable|string|max:255',
+            'village' => 'nullable|string|max:255',
+            'postal_code' => 'nullable|string|max:255',
+            'specialty' => 'sometimes|required|string|max:255',
+            'experience' => 'sometimes|required|integer|min:0',
+            'license_number' => 'nullable|string|max:255',
+            'hourly_rate' => 'nullable|numeric|min:0',
+            'daily_rate' => 'nullable|numeric|min:0',
+            'status' => 'sometimes|required|in:Active,Inactive,On Leave',
+            'skills' => 'nullable|string',
+            'qualifications' => 'nullable|string',
+            'certifications' => 'nullable|string',
+            'languages' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ];
+
+        return array_intersect_key($allRules, array_flip($allowedFields));
     }
 
     /**

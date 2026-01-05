@@ -1,0 +1,1140 @@
+[
+  {
+    "part_number": "EPC001",
+    "name": "Pressure Valve",
+    "appliance_type": "EPC",
+    "location": "Top Lid",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Regulates pressure release during cooking to ensure safety",
+    "comments": "Ensure proper alignment to prevent leaks",
+    "price": 65431.94,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC002",
+    "name": "Silicone Gasket",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Silicone sealing ring for airtight pressure retention",
+    "comments": "Replace every 6-12 months due to wear",
+    "price": 88264.37,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC003",
+    "name": "Inner Pot",
+    "appliance_type": "EPC",
+    "location": "Main Body",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Stainless steel pot for even heat distribution",
+    "comments": "Check for scratches or dents to ensure performance",
+    "price": 111065.64,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC004",
+    "name": "Steam Rack",
+    "appliance_type": "EPC",
+    "location": "Inside Pot",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Metal rack for elevating food during steaming",
+    "comments": "Ensure proper fit to avoid wobbling",
+    "price": 114434.97,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC005",
+    "name": "Float Valve",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Indicates pressure status and locks lid",
+    "comments": "Clean regularly to prevent blockages",
+    "price": 42712.38,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC006",
+    "name": "Control Panel",
+    "appliance_type": "EPC",
+    "location": "Front Body",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt"
+    ],
+    "description": "Electronic interface for setting cooking modes",
+    "comments": "Limited stock for older models; verify model number",
+    "price": 26574.09,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC007",
+    "name": "Heating Element",
+    "appliance_type": "EPC",
+    "location": "Base",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Provides heat for pressure cooking",
+    "comments": "Requires professional installation",
+    "price": 17885.8,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC008",
+    "name": "Lid Handle",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Ergonomic handle for safe lid operation",
+    "comments": "Check compatibility with lid size",
+    "price": 136270.56,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC009",
+    "name": "Anti-Block Shield",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Prevents food particles from clogging valve",
+    "comments": "Clean after each use",
+    "price": 148605.07,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC010",
+    "name": "Power Cord",
+    "appliance_type": "EPC",
+    "location": "Base",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Detachable 220-240V power cord",
+    "comments": "Ensure voltage compatibility (220-240V)",
+    "price": 72749.95,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC011",
+    "name": "Condensation Collector",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Collects excess moisture during cooking",
+    "comments": "Empty and clean regularly",
+    "price": 42759.52,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC012",
+    "name": "Sealing Ring",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Pressure Cooker",
+      "Tefal Secure Trendy"
+    ],
+    "description": "Silicone ring for pressure sealing",
+    "comments": "Replace annually for optimal performance",
+    "price": 135532.15,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC013",
+    "name": "Safety Valve",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Pressure Cooker",
+      "Tefal Secure Trendy"
+    ],
+    "description": "Prevents overpressure incidents",
+    "comments": "Inspect for wear or damage",
+    "price": 103962.21,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC014",
+    "name": "Base Plate",
+    "appliance_type": "EPC",
+    "location": "Base",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Pressure Cooker",
+      "Tefal Secure Trendy"
+    ],
+    "description": "Supports internal components",
+    "comments": "Limited availability; order in advance",
+    "price": 42945.85,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC015",
+    "name": "Display Screen",
+    "appliance_type": "EPC",
+    "location": "Front Body",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Pressure Cooker",
+      "Tefal Secure Trendy"
+    ],
+    "description": "LED screen for cooking status",
+    "comments": "Fragile; handle with care",
+    "price": 145998.16,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC016",
+    "name": "Locking Mechanism",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Saachi"
+    ],
+    "appliances": [
+      "Saachi EPC-6.0",
+      "Saachi EPC-8.0"
+    ],
+    "description": "Secures lid during pressure cooking",
+    "comments": "Ensure smooth operation to avoid jams",
+    "price": 33501.19,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC017",
+    "name": "Temperature Sensor",
+    "appliance_type": "EPC",
+    "location": "Base",
+    "brands": [
+      "Saachi"
+    ],
+    "appliances": [
+      "Saachi EPC-6.0",
+      "Saachi EPC-8.0"
+    ],
+    "description": "Monitors cooking temperature for safety",
+    "comments": "Requires calibration after replacement",
+    "price": 116940.0,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC018",
+    "name": "Pressure Sensor",
+    "appliance_type": "EPC",
+    "location": "Internal",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense EPC",
+      "Hisense EPC 5L"
+    ],
+    "description": "Monitors internal pressure levels",
+    "comments": "Specialized part; limited stock",
+    "price": 6441.55,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC019",
+    "name": "Steam Release Knob",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense EPC",
+      "Hisense EPC 5L"
+    ],
+    "description": "Manual steam release control",
+    "comments": "Check for smooth operation",
+    "price": 68502.36,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC020",
+    "name": "Inner Lid Seal",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense EPC",
+      "Hisense EPC 5L"
+    ],
+    "description": "Secondary seal for lid",
+    "comments": "Replace if cracked or deformed",
+    "price": 79539.58,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC021",
+    "name": "Control Knob",
+    "appliance_type": "EPC",
+    "location": "Front Body",
+    "brands": [
+      "Prestige"
+    ],
+    "appliances": [
+      "Prestige EPC",
+      "Prestige Smartplus"
+    ],
+    "description": "Adjusts cooking settings manually",
+    "comments": "Limited for digital models",
+    "price": 74269.44,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC025",
+    "name": "Timer Module",
+    "appliance_type": "EPC",
+    "location": "Internal",
+    "brands": [
+      "Instant Pot"
+    ],
+    "appliances": [
+      "Instant Pot Duo 6Qt",
+      "Instant Pot Pro 8Qt"
+    ],
+    "description": "Controls cooking duration",
+    "comments": "Limited availability; order early",
+    "price": 148777.9,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC028",
+    "name": "Handle Grip",
+    "appliance_type": "EPC",
+    "location": "Lid",
+    "brands": [
+      "Saachi"
+    ],
+    "appliances": [
+      "Saachi EPC-6.0",
+      "Saachi EPC-8.0"
+    ],
+    "description": "Heat-resistant grip for lid",
+    "comments": "Check for secure attachment",
+    "price": 116437.14,
+    "image_path": null
+  },
+  {
+    "part_number": "EPC029",
+    "name": "Thermal Fuse",
+    "appliance_type": "EPC",
+    "location": "Internal",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense EPC",
+      "Hisense EPC 5L"
+    ],
+    "description": "Protects against overheating",
+    "comments": "Replace after tripping",
+    "price": 44657.21,
+    "image_path": null
+  },
+  {
+    "part_number": "AF001",
+    "name": "Air Fryer Basket",
+    "appliance_type": "Air Fryer",
+    "location": "Main Body",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Viva Air Fryer",
+      "Philips Air Fryer XL"
+    ],
+    "description": "Non-stick basket for air frying",
+    "comments": "Check coating for wear",
+    "price": 123040.13,
+    "image_path": null
+  },
+  {
+    "part_number": "AF002",
+    "name": "Air Fryer Tray",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Viva Air Fryer",
+      "Philips Air Fryer XL"
+    ],
+    "description": "Perforated tray for air circulation",
+    "comments": "Ensure proper fit in basket",
+    "price": 23807.26,
+    "image_path": null
+  },
+  {
+    "part_number": "AF003",
+    "name": "Heating Coil",
+    "appliance_type": "Air Fryer",
+    "location": "Top Body",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Viva Air Fryer",
+      "Philips Air Fryer XL"
+    ],
+    "description": "Generates heat for air frying",
+    "comments": "Professional installation recommended",
+    "price": 11196.79,
+    "image_path": null
+  },
+  {
+    "part_number": "AF004",
+    "name": "Fan Blade",
+    "appliance_type": "Air Fryer",
+    "location": "Top Body",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Viva Air Fryer",
+      "Philips Air Fryer XL"
+    ],
+    "description": "Circulates hot air for even cooking",
+    "comments": "Check for balance to avoid noise",
+    "price": 87125.33,
+    "image_path": null
+  },
+  {
+    "part_number": "AF005",
+    "name": "Control Knob",
+    "appliance_type": "Air Fryer",
+    "location": "Front Body",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Viva Air Fryer",
+      "Philips Air Fryer XL"
+    ],
+    "description": "Adjusts temperature and time",
+    "comments": "Limited for touch-screen models",
+    "price": 5003.79,
+    "image_path": null
+  },
+  {
+    "part_number": "AF006",
+    "name": "Silicone Liner",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Ninja"
+    ],
+    "appliances": [
+      "Ninja Air Fryer AF100",
+      "Ninja Foodi OP300"
+    ],
+    "description": "Reusable non-stick liner for easy cleaning",
+    "comments": "Eco-friendly alternative to parchment",
+    "price": 139054.51,
+    "image_path": null
+  },
+  {
+    "part_number": "AF007",
+    "name": "Temperature Sensor",
+    "appliance_type": "Air Fryer",
+    "location": "Internal",
+    "brands": [
+      "Ninja"
+    ],
+    "appliances": [
+      "Ninja Air Fryer AF100",
+      "Ninja Foodi OP300"
+    ],
+    "description": "Monitors frying temperature",
+    "comments": "Requires calibration",
+    "price": 101215.65,
+    "image_path": null
+  },
+  {
+    "part_number": "AF008",
+    "name": "Air Fryer Rack",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Ninja"
+    ],
+    "appliances": [
+      "Ninja Air Fryer AF100",
+      "Ninja Foodi OP300"
+    ],
+    "description": "Multi-layer rack for extra capacity",
+    "comments": "Check size compatibility",
+    "price": 75906.1,
+    "image_path": null
+  },
+  {
+    "part_number": "AF009",
+    "name": "Handle",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Viva Air Fryer",
+      "Philips Air Fryer XL"
+    ],
+    "description": "Ergonomic handle for basket removal",
+    "comments": "Ensure secure attachment",
+    "price": 134431.01,
+    "image_path": null
+  },
+  {
+    "part_number": "AF010",
+    "name": "Filter",
+    "appliance_type": "Air Fryer",
+    "location": "Top Body",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Easy Fry",
+      "Tefal ActiFry"
+    ],
+    "description": "Reduces smoke and odors during frying",
+    "comments": "Replace every 3-6 months",
+    "price": 141412.1,
+    "image_path": null
+  },
+  {
+    "part_number": "AF011",
+    "name": "Grill Pan",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Ninja"
+    ],
+    "appliances": [
+      "Ninja Air Fryer AF100",
+      "Ninja Foodi OP300"
+    ],
+    "description": "Non-stick pan for grilling meats",
+    "comments": "Check coating integrity",
+    "price": 105840.99,
+    "image_path": null
+  },
+  {
+    "part_number": "AF012",
+    "name": "Skewer Rack",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Ninja"
+    ],
+    "appliances": [
+      "Ninja Air Fryer AF100",
+      "Ninja Foodi OP300"
+    ],
+    "description": "Metal rack for kebabs and skewers",
+    "comments": "Ensure proper fit in basket",
+    "price": 133941.04,
+    "image_path": null
+  },
+  {
+    "part_number": "AF013",
+    "name": "Baking Tray",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Easy Fry",
+      "Tefal ActiFry"
+    ],
+    "description": "Non-stick tray for baking cakes",
+    "comments": "Ensure even heat distribution",
+    "price": 125164.0,
+    "image_path": null
+  },
+  {
+    "part_number": "AF014",
+    "name": "Air Inlet Cover",
+    "appliance_type": "Air Fryer",
+    "location": "Top Body",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Easy Fry",
+      "Tefal ActiFry"
+    ],
+    "description": "Protects fan and heater from debris",
+    "comments": "Clean regularly to maintain airflow",
+    "price": 106646.89,
+    "image_path": null
+  },
+  {
+    "part_number": "AF015",
+    "name": "Power Button",
+    "appliance_type": "Air Fryer",
+    "location": "Front Body",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Easy Fry",
+      "Tefal ActiFry"
+    ],
+    "description": "Toggles power on/off",
+    "comments": "Check for responsiveness",
+    "price": 118773.32,
+    "image_path": null
+  },
+  {
+    "part_number": "AF016",
+    "name": "Timer Module",
+    "appliance_type": "Air Fryer",
+    "location": "Internal",
+    "brands": [
+      "Saachi"
+    ],
+    "appliances": [
+      "Saachi Air Fryer",
+      "Saachi Air Fryer 5L"
+    ],
+    "description": "Controls frying duration",
+    "comments": "Limited availability; order early",
+    "price": 98330.0,
+    "image_path": null
+  },
+  {
+    "part_number": "AF017",
+    "name": "Non-Stick Coating",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Saachi"
+    ],
+    "appliances": [
+      "Saachi Air Fryer",
+      "Saachi Air Fryer 5L"
+    ],
+    "description": "Replacement coating for basket",
+    "comments": "Apply professionally to ensure durability",
+    "price": 144200.04,
+    "image_path": null
+  },
+  {
+    "part_number": "AF018",
+    "name": "Air Fryer Lid",
+    "appliance_type": "Air Fryer",
+    "location": "Top Body",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense Air Fryer",
+      "Hisense Air Fryer 4L"
+    ],
+    "description": "Covers cooking chamber",
+    "comments": "Check hinge alignment",
+    "price": 133861.28,
+    "image_path": null
+  },
+  {
+    "part_number": "AF019",
+    "name": "Fan Guard",
+    "appliance_type": "Air Fryer",
+    "location": "Top Body",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense Air Fryer",
+      "Hisense Air Fryer 4L"
+    ],
+    "description": "Protects fan blade from debris",
+    "comments": "Clean regularly to maintain airflow",
+    "price": 62610.09,
+    "image_path": null
+  },
+  {
+    "part_number": "AF020",
+    "name": "Temperature Control Knob",
+    "appliance_type": "Air Fryer",
+    "location": "Front Body",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense Air Fryer",
+      "Hisense Air Fryer 4L"
+    ],
+    "description": "Adjusts frying temperature",
+    "comments": "Limited for digital models",
+    "price": 32838.13,
+    "image_path": null
+  },
+  {
+    "part_number": "AF022",
+    "name": "Silicone Liner",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Hoffmans"
+    ],
+    "appliances": [
+      "Hoffmans Air Fryer 5L",
+      "Hoffmans Air Fryer 7L"
+    ],
+    "description": "Reusable non-stick liner",
+    "comments": "Eco-friendly cleaning solution",
+    "price": 126845.57,
+    "image_path": null
+  },
+  {
+    "part_number": "AF024",
+    "name": "Air Fryer Tray",
+    "appliance_type": "Air Fryer",
+    "location": "Basket",
+    "brands": [
+      "Midea"
+    ],
+    "appliances": [
+      "Midea Air Fryer 5L",
+      "Midea Air Fryer 7L"
+    ],
+    "description": "Perforated tray for air circulation",
+    "comments": "Ensure proper fit",
+    "price": 118552.44,
+    "image_path": null
+  },
+  {
+    "part_number": "IC005",
+    "name": "Cooling Fan",
+    "appliance_type": "Induction Cooker",
+    "location": "Base",
+    "brands": [
+      "Philips, "
+    ],
+    "appliances": [
+      "Philips Induction Cooker",
+      "Philips HD4938"
+    ],
+    "description": "Prevents overheating of internal components",
+    "comments": "Ensure proper airflow",
+    "price": 56321.74,
+    "image_path": null
+  },
+  {
+    "part_number": "IC006",
+    "name": "Sensor Diode",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Induction Cooker",
+      "Philips HD4938"
+    ],
+    "description": "Detects pan presence for safety",
+    "comments": "Specialized part; limited stock",
+    "price": 72184.77,
+    "image_path": null
+  },
+  {
+    "part_number": "IC007",
+    "name": "Bridge Rectifier",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Induction Cooker",
+      "Philips HD4938"
+    ],
+    "description": "Converts AC to DC for internal circuits",
+    "comments": "Requires technical expertise",
+    "price": 149313.85,
+    "image_path": null
+  },
+  {
+    "part_number": "IC008",
+    "name": "Power Cord",
+    "appliance_type": "Induction Cooker",
+    "location": "Base",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Induction Cooker",
+      "Philips HD4938"
+    ],
+    "description": "Detachable 220-240V power cord",
+    "comments": "Check plug type for compatibility",
+    "price": 105510.31,
+    "image_path": null
+  },
+  {
+    "part_number": "IC009",
+    "name": "Touch Panel",
+    "appliance_type": "Induction Cooker",
+    "location": "Top Surface",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Induction Cooker",
+      "Philips HD4938"
+    ],
+    "description": "Touch-sensitive control interface",
+    "comments": "Limited for older models; verify compatibility",
+    "price": 73877.16,
+    "image_path": null
+  },
+  {
+    "part_number": "IC010",
+    "name": "Thermal Fuse",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "Philips"
+    ],
+    "appliances": [
+      "Philips Induction Cooker",
+      "Philips HD4938"
+    ],
+    "description": "Protects against overheating",
+    "comments": "Replace after tripping",
+    "price": 34661.38,
+    "image_path": null
+  },
+  {
+    "part_number": "IC011",
+    "name": "Fan Motor",
+    "appliance_type": "Induction Cooker",
+    "location": "Base",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Induction Cooker",
+      "Tefal IH2018"
+    ],
+    "description": "Drives cooling fan for heat dissipation",
+    "comments": "Ensure proper voltage (220-240V)",
+    "price": 72436.57,
+    "image_path": null
+  },
+  {
+    "part_number": "IC013",
+    "name": "Base Cover",
+    "appliance_type": "Induction Cooker",
+    "location": "Bottom",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Induction Cooker",
+      "Tefal IH2018"
+    ],
+    "description": "Protects internal components",
+    "comments": "Check for cracks or damage",
+    "price": 106611.67,
+    "image_path": null
+  },
+  {
+    "part_number": "IC014",
+    "name": "IGBT Module",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Induction Cooker",
+      "Tefal IH2018"
+    ],
+    "description": "Controls power output for induction",
+    "comments": "Specialized part; requires expertise",
+    "price": 10305.52,
+    "image_path": null
+  },
+  {
+    "part_number": "IC015",
+    "name": "Microswitch",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "Tefal"
+    ],
+    "appliances": [
+      "Tefal Induction Cooker",
+      "Tefal IH2018"
+    ],
+    "description": "Safety switch for operation",
+    "comments": "Check alignment for functionality",
+    "price": 82434.85,
+    "image_path": null
+  },
+  {
+    "part_number": "IC016",
+    "name": "Display Module",
+    "appliance_type": "Induction Cooker",
+    "location": "Front Body",
+    "brands": [
+      "Saachi"
+    ],
+    "appliances": [
+      "Saachi Induction Cooker",
+      "Saachi IC-2000"
+    ],
+    "description": "Shows power and time settings",
+    "comments": "Fragile; handle with care",
+    "price": 15457.5,
+    "image_path": null
+  },
+  {
+    "part_number": "IC017",
+    "name": "Base Feet",
+    "appliance_type": "Induction Cooker",
+    "location": "Bottom",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense Induction Cooker",
+      "Hisense IC-1800"
+    ],
+    "description": "Non-slip feet for stability",
+    "comments": "Replace if worn or missing",
+    "price": 40941.88,
+    "image_path": null
+  },
+  {
+    "part_number": "IC018",
+    "name": "Power Regulator",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense Induction Cooker",
+      "Hisense IC-1800"
+    ],
+    "description": "Controls power output",
+    "comments": "Technical replacement needed",
+    "price": 28522.38,
+    "image_path": null
+  },
+  {
+    "part_number": "IC019",
+    "name": "Temperature Sensor",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "Hisense"
+    ],
+    "appliances": [
+      "Hisense Induction Cooker",
+      "Hisense IC-1800"
+    ],
+    "description": "Monitors surface temperature",
+    "comments": "Requires calibration",
+    "price": 111211.12,
+    "image_path": null
+  },
+  {
+    "part_number": "IC033",
+    "name": "Control Board",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "SPJ"
+    ],
+    "appliances": [
+      "SPJ Induction Cooker",
+      "SPJ IC-2000"
+    ],
+    "description": "Manages cooking settings",
+    "comments": "Limited availability; order early",
+    "price": 21309.24,
+    "image_path": null
+  },
+  {
+    "part_number": "IC038",
+    "name": "Control Board",
+    "appliance_type": "Induction Cooker",
+    "location": "Internal",
+    "brands": [
+      "Tatung"
+    ],
+    "appliances": [
+      "Tatung Induction Cooker",
+      "Tatung IC-1800"
+    ],
+    "description": "Manages cooking settings",
+    "comments": "Limited availability; order early",
+    "price": 22689.53,
+    "image_path": null
+  },
+  {
+    "part_number": "IC039",
+    "name": "Glass Plate",
+    "appliance_type": "Induction Cooker",
+    "location": "Top Surface",
+    "brands": [
+      "Newmatic"
+    ],
+    "appliances": [
+      "Newmatic Induction Cooker",
+      "Newmatic IC-2000"
+    ],
+    "description": "Ceramic glass cooking surface",
+    "comments": "Check for cracks",
+    "price": 63022.9,
+    "image_path": null
+  },
+  {
+    "part_number": "IC040",
+    "name": "Power Switch",
+    "appliance_type": "Induction Cooker",
+    "location": "Front Body",
+    "brands": [
+      "Ariete"
+    ],
+    "appliances": [
+      "Ariete Induction Cooker",
+      "Ariete IC-1800"
+    ],
+    "description": "On/off switch for power",
+    "comments": "Check for electrical faults",
+    "price": 68289.08,
+    "image_path": null
+  },
+  {
+    "part_number": "IC041",
+    "name": "Induction Coil",
+    "appliance_type": "Induction Cooker",
+    "location": "Base",
+    "brands": [
+      "Electro Master"
+    ],
+    "appliances": [
+      "Electro Master Induction Cooker",
+      "Electro Master IC-2000"
+    ],
+    "description": "Generates electromagnetic field",
+    "comments": "Professional replacement required",
+    "price": 63484.64,
+    "image_path": null
+  },
+  {
+    "part_number": "IC043",
+    "name": "Control Knob",
+    "appliance_type": "Induction Cooker",
+    "location": "Front Body",
+    "brands": [
+      "Ramtons"
+    ],
+    "appliances": [
+      "Ramtons Induction Cooker",
+      "Ramtons IC-2000"
+    ],
+    "description": "Adjusts power settings manually",
+    "comments": "Limited for touch-panel models",
+    "price": 102423.15,
+    "image_path": null
+  },
+  {
+    "part_number": "IC044",
+    "name": "Glass Plate",
+    "appliance_type": "Induction Cooker",
+    "location": "Top Surface",
+    "brands": [
+      "Mika"
+    ],
+    "appliances": [
+      "Mika Induction Cooker",
+      "Mika IC-1800"
+    ],
+    "description": "Ceramic glass cooking surface",
+    "comments": "Check for cracks",
+    "price": 38373.66,
+    "image_path": null
+  }
+]

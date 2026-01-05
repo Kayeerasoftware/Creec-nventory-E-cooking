@@ -2,88 +2,85 @@
 
 namespace Database\Seeders;
 
-use App\Models\Technician;
 use Illuminate\Database\Seeder;
+use App\Models\Technician;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Illuminate\Support\Facades\Hash;
 
 class TechnicianSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $technicians = [
-            [
-                'name' => 'Michael Ssebunya',
-                'specialty' => 'Refrigeration Systems',
-                'email' => 'michael.ssebunya@tech.com',
-                'phone' => '+256 770 123 45667',
-                'license' => 'TL001234',
-                'location' => 'Kampala Central',
-                'experience' => 12,
-                'rate' => 25000,
-                'skills' => ['AC Repair', 'Refrigerator Maintenance', 'Cold Room Installation'],
-                'certifications' => ['Certified HVAC Technician', 'Refrigeration License Class A'],
-                'status' => 'Available',
-            ],
-            [
-                'name' => 'Agnes Namutebi',
-                'specialty' => 'Electronics Repair',
-                'email' => 'agnes.namutebi@tech.com',
-                'phone' => '+256 771 234 567',
-                'license' => 'TL001235',
-                'location' => 'Entebbe',
-                'experience' => 8,
-                'rate' => 20000,
-                'skills' => ['TV Repair', 'Audio Systems', 'Microwave Servicing'],
-                'certifications' => ['Electronics Technician Certificate', 'Appliance Repair License'],
-                'status' => 'Available',
-            ],
-            [
-                'name' => 'Joseph Kiggundu',
-                'specialty' => 'Washing Machine Repair',
-                'email' => 'joseph.kiggundu@tech.com',
-                'phone' => '+256 772 345 678',
-                'license' => 'TL001236',
-                'location' => 'Jinja',
-                'experience' => 10,
-                'rate' => 22000,
-                'skills' => ['Washing Machine Repair', 'Dryer Maintenance', 'Spin Motor Replacement'],
-                'certifications' => ['Laundry Equipment Specialist', 'Appliance Technology Certificate'],
-                'status' => 'Busy',
-            ],
-            [
-                'name' => 'Rebecca Nakimuli',
-                'specialty' => 'Kitchen Appliances',
-                'email' => 'rebecca.nakimuli@tech.com',
-                'phone' => '+256 773 456 789',
-                'license' => 'TL001237',
-                'location' => 'Mbarara',
-                'experience' => 6,
-                'rate' => 18000,
-                'skills' => ['Microwave Repair', 'Oven Maintenance', 'Blender Servicing'],
-                'certifications' => ['Kitchen Appliance Repair Certificate', 'Safety Compliance License'],
-                'status' => 'Available',
-            ],
-            [
-                'name' => 'Samuel Ochieng',
-                'specialty' => 'Audio-Visual Equipment',
-                'email' => 'samuel.ochieng@tech.com',
-                'phone' => '+256 774 567 890',
-                'license' => 'TL001238',
-                'location' => 'Gulu',
-                'experience' => 15,
-                'rate' => 30000,
-                'skills' => ['TV Repair', 'Sound System Installation', 'Home Theater Setup'],
-                'certifications' => ['Audio-Visual Systems Expert', 'Electronics Engineering Diploma'],
-                'status' => 'Available',
-            ],
-        ];
-
-        foreach ($technicians as $technician) {
+        $filePath = base_path('Technicians.xlsx');
+        
+        if (!file_exists($filePath)) {
+            $this->command->warn('Technicians.xlsx not found. Skipping technician seeding.');
+            return;
+        }
+        
+        $spreadsheet = IOFactory::load($filePath);
+        $worksheet = $spreadsheet->getActiveSheet();
+        
+        $currentVenue = '';
+        $currentTrainingDates = '';
+        $cohortNumber = 0;
+        
+        foreach ($worksheet->getRowIterator(2) as $row) {
+            $cellIterator = $row->getCellIterator();
+            $cellIterator->setIterateOnlyExistingCells(false);
+            $cells = [];
+            
+            foreach ($cellIterator as $cell) {
+                $cells[] = $cell->getValue();
+            }
+            
+            if (isset($cells[0]) && str_contains(strtolower($cells[0] ?? ''), 'training dates')) {
+                $currentTrainingDates = $cells[0];
+                $cohortNumber++;
+                continue;
+            }
+            
+            if (isset($cells[7]) && str_contains(strtolower($cells[7] ?? ''), 'venue')) {
+                $currentVenue = str_replace(['Venue:', 'Venue'], '', $cells[7]);
+                $currentVenue = trim($currentVenue);
+                continue;
+            }
+            
+            if ($cells[0] === 'ID' || empty($cells[1])) {
+                continue;
+            }
+            
+            $name = trim($cells[1] ?? '');
+            if (empty($name)) continue;
+            
+            $nameParts = explode(' ', strtolower($name));
+            $emailName = implode('', array_filter($nameParts));
+            $email = $emailName . $cohortNumber . '@creec.com';
+            
+            $phone = $cells[5] ?? '';
+            $phone = preg_replace('/[^0-9]/', '', $phone);
+            if (str_starts_with($phone, '0')) {
+                $phone = '+256' . substr($phone, 1);
+            } elseif (!str_starts_with($phone, '+')) {
+                $phone = '+256' . $phone;
+            }
+            
             Technician::updateOrCreate(
-                ['email' => $technician['email']],
-                $technician
+                ['email' => $email],
+                [
+                    'name' => $name,
+                    'phone' => $phone,
+                    'place_of_work' => $cells[4] ?? null,
+                    'gender' => $cells[2] ?? null,
+                    'age' => $cells[3] ?? null,
+                    'venue' => $currentVenue ?: null,
+                    'training_dates' => $currentTrainingDates ?: null,
+                    'cohort_number' => $cohortNumber,
+                    'specialty' => 'E-cooking',
+                    'license' => 'N/A',
+                    'location' => $currentVenue ?: 'Uganda',
+                    'password' => Hash::make('password'),
+                ]
             );
         }
     }

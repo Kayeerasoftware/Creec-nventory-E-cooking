@@ -9,27 +9,63 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('assets/styles.css') }}">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
 </head>
 <body id="dashboard">
     <!-- Top Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark fixed-top" style="background: linear-gradient(90deg, #140168 0%, #5039d6 100%);">
-        <div class="container-fluid d-flex justify-content-between align-items-center">
-            <div class="d-flex align-items-center">
-                <button class="btn btn-outline-light me-2 d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar">
+    <nav class="navbar navbar-dark fixed-top" style="background: linear-gradient(90deg, #140168 0%, #5039d6 100%); z-index: 9999; padding: 0.2rem 0.3rem; min-height: 45px;">
+        <div class="container-fluid d-flex justify-content-between align-items-center" style="gap: 0.2rem; flex-wrap: nowrap;">
+            <div class="d-flex align-items-center" style="gap: 0.2rem; flex-shrink: 0;">
+                <button class="btn btn-outline-light d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" style="padding: 0.2rem 0.4rem; font-size: 0.9rem;">
                     <i class="fas fa-bars"></i>
                 </button>
-                <div class="d-flex align-items-center me-3">
-                    <a class="btn btn-link me-3" href="https://creec.or.ug" target="_blank" style="padding: 0; border: none; outline: none; background: linear-gradient(90deg, rgba(20,1,104,0.3) 0%, rgba(80,57,214,0.3) 100%);"><img src="{{ asset('pictures/creec-logo.png') }}" alt="CREEC Logo" height="50"></a>
-                    <button class="btn btn-link navbar-text" style="font-size: 1.2em; color: #ff8c00; font-weight: bold; border: none; outline: none; background: linear-gradient(90deg, rgba(20,1,104,0.3) 0%, rgba(80,57,214,0.3) 100%);" type="button"><i class="fas fa-headset me-2" style="color: #ff8c00;"></i>CREEC Support</button>
-                </div>
+                <a class="btn btn-link" href="https://creec.or.ug" target="_blank" style="padding: 0; border: none;"><img src="{{ asset('pictures/creec-logo.png') }}" alt="CREEC Logo" height="30" id="welcomeLogo"></a>
+                <button class="btn btn-link d-none d-md-block" style="font-size: 1em; color: #ff8c00; padding: 0.2rem 0.5rem;" type="button" data-bs-toggle="modal" data-bs-target="#chatModal"><i class="fas fa-headset me-1"></i>Support</button>
+                <button class="btn btn-link d-md-none" style="font-size: 1em; color: #ff8c00; padding: 0.2rem 0.4rem;" type="button" data-bs-toggle="modal" data-bs-target="#chatModal"><i class="fas fa-headset"></i></button>
             </div>
-            <button class="navbar-brand mx-auto btn btn-link" style="font-size: 1.2em; border: none; outline: none; background: linear-gradient(90deg, rgba(20,1,104,0.3) 0%, rgba(80,57,214,0.3) 100%);" type="button">
-                <i class="fas fa-tools"></i> E-Cooking Spare Parts Inventory Management System
-            </button>
-            <div class="navbar-nav">
-                <button class="btn btn-link navbar-text" style="font-size: 1.2em; color: #ffe66d; border: none; outline: none; background: linear-gradient(90deg, rgba(20,1,104,0.3) 0%, rgba(80,57,214,0.3) 100%);" type="button"><img src="/pictures/Power Cord.png" alt="Icon" style="width: 40px; height: 40px; margin-right: 8px;">Manage Your Workshop</button>
+            <div class="d-none d-md-block" style="flex-grow: 1; text-align: center;">
+                <span style="font-size: 1em; color: white;"><i class="fas fa-tools"></i> E-Cooking Inventory</span>
+            </div>
+            <div class="navbar-nav d-flex align-items-center flex-row" style="gap: 0.2rem; flex-shrink: 0; flex-wrap: nowrap;">
+                <div style="background: rgba(255,255,255,0.1); padding: 2px 4px; border-radius: 3px;">
+                    <span class="text-white" style="font-size: 0.65em; white-space: nowrap;">
+                        <span id="currentDate"></span> <span id="currentTime"></span>
+                    </span>
+                </div>
+                @auth
+                    <div class="dropdown">
+                        <a href="#" class="btn btn-link navbar-text dropdown-toggle d-none d-md-block" style="font-size: 1.1em; color: #ffe66d; border: none; outline: none; background: rgba(255,230,109,0.15); padding: 8px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s;" data-bs-toggle="dropdown" onmouseover="this.style.background='rgba(255,230,109,0.25)'" onmouseout="this.style.background='rgba(255,230,109,0.15)'">
+                            <i class="fas fa-user-circle me-2"></i>{{ auth()->user()->name }}
+                        </a>
+                        <a href="#" class="btn btn-link navbar-text dropdown-toggle d-md-none" style="font-size: 1.2em; color: #ffe66d; border: none; outline: none; background: rgba(255,230,109,0.15); padding: 8px 12px; border-radius: 8px; text-decoration: none;" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-lg" style="border-radius: 10px; border: none; min-width: 200px;">
+                            <li class="px-3 py-2 border-bottom">
+                                <small class="text-muted">Signed in as</small>
+                                <div class="fw-bold">{{ auth()->user()->name }}</div>
+                                <small class="badge bg-{{ auth()->user()->role === 'admin' ? 'danger' : (auth()->user()->role === 'trainer' ? 'warning' : 'info') }}">{{ ucfirst(auth()->user()->role) }}</small>
+                            </li>
+                            @if(auth()->user()->role === 'admin')
+                                <li><a class="dropdown-item" href="/admin"><i class="fas fa-cog me-2"></i>Admin Dashboard</a></li>
+                                <li><a class="dropdown-item" href="/profile"><i class="fas fa-user me-2"></i>My Profile</a></li>
+                            @endif
+                            <li>
+                                <a class="dropdown-item" href="#" onclick="event.preventDefault(); document.getElementById('logout-form-top').submit();">
+                                    <i class="fas fa-sign-out-alt me-2 text-danger"></i>Logout
+                                </a>
+                                <form id="logout-form-top" action="/logout" method="POST" style="display: none;">
+                                    @csrf
+                                </form>
+                            </li>
+                        </ul>
+                    </div>
+                @else
+                    <a href="/login" class="btn btn-link navbar-text d-none d-md-block" style="font-size: 1.1em; color: #ffe66d; border: none; outline: none; background: rgba(255,230,109,0.15); padding: 8px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,230,109,0.25)'" onmouseout="this.style.background='rgba(255,230,109,0.15)'"><img src="/pictures/Power Cord.png" alt="Icon" style="width: 35px; height: 35px; margin-right: 8px;">Manage Your Workshop</a>
+                    <a href="/login" class="btn btn-link navbar-text d-md-none" style="font-size: 1.2em; color: #ffe66d; border: none; outline: none; background: rgba(255,230,109,0.15); padding: 8px 12px; border-radius: 8px; text-decoration: none;"><img src="/pictures/Power Cord.png" alt="Icon" style="width: 35px; height: 35px;"></a>
+                @endauth
             </div>
         </div>
     </nav>
@@ -40,26 +76,47 @@
             <h5 class="offcanvas-title" id="sidebarLabel">Menu</h5>
             <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
         </div>
-        <div class="offcanvas-body d-lg-block">
+        <div class="offcanvas-body d-lg-block d-flex flex-column" style="padding-bottom: 0; position: relative;">
             <!-- Sidebar Header -->
             <div class="sidebar-header mb-2 px-2">
                 <div class="text-center">
                     <h5 class="mb-0 fw-bold" style="color: #140168; font-size: 0.9rem;">R&M</h5>
                     <div class="d-flex align-items-center justify-content-center mt-1">
                         <i class="fas fa-chalkboard-teacher me-1" style="color: #140168; font-size: 0.75rem;"></i>
-                        <span class="fw-bold" style="color: #140168; font-size: 0.65rem;">Inventory System</span>
+                        <span class="fw-bold" style="color: #140168; font-size: 0.5rem;">Inventory System</span>
                     </div>
                 </div>
                 <hr class="my-2" style="border: 1px solid #140168; opacity: 1;">
             </div>
             <div class="px-2 mb-2">
-                <span class="d-flex align-items-center">
-                    <i class="fas fa-user-lock me-1 text-danger" style="font-size: 0.7rem;"></i>
-                    <span class="fw-bold text-danger" style="font-size: 0.7rem;">No login</span>
-                </span>
+                @auth
+                    <span class="d-flex align-items-center">
+                        <i class="fas fa-check-circle me-1 text-success" style="font-size: 0.7rem;"></i>
+                        <span class="fw-bold text-success" style="font-size: 0.7rem;">Authenticated</span>
+                    </span>
+                @else
+                    <span class="d-flex align-items-center">
+                        <i class="fas fa-user-friends me-1 text-info" style="font-size: 0.7rem;"></i>
+                        <span class="fw-bold text-info" style="font-size: 0.7rem;">Guest access</span>
+                    </span>
+                @endauth
             </div>
+            <div class="px-2 mb-2">
+                @auth
+                    <span class="d-flex align-items-center">
+                        <i class="fas fa-shield-alt me-1 text-success" style="font-size: 0.7rem;"></i>
+                        <span class="fw-bold text-success" style="font-size: 0.7rem;">{{ ucfirst(auth()->user()->role) }} Access</span>
+                    </span>
+                @else
+                    <span class="d-flex align-items-center">
+                        <i class="fas fa-user-lock me-1 text-danger" style="font-size: 0.7rem;"></i>
+                        <span class="fw-bold text-danger" style="font-size: 0.6rem;">No login needed</span>
+                    </span>
+                @endauth
+            </div>
+            <div style="flex: 1;">
             <nav class="nav flex-column">
-                <a class="nav-link active" href="#dashboard">
+                <a class="nav-link active" href="#dashboard-section">
                     <i class="fas fa-tachometer-alt"></i> Dashboard
                 </a>
                 <a class="nav-link" href="#inventory">
@@ -80,39 +137,81 @@
                 <a class="nav-link" href="#settings">
                     <i class="fas fa-cog"></i> Settings
                 </a>
-                <hr class="my-3" style="border: 0.5px solid #ccc; opacity: 0.5;">
-                <div class="px-2 mb-1">
-                    <span class="d-flex align-items-center">
-                        <i class="fas fa-exclamation-circle me-1 text-warning" style="font-size: 0.7rem;"></i>
-                        <span class="fw-bold text-warning" style="font-size: 0.7rem;">Must login</span>
-                    </span>
-                </div>
-                <a class="nav-link" href="#user-login" data-bs-toggle="modal" data-bs-target="#loginModal">
-                    <i class="fas fa-user"></i> User Login
+                <hr class="my-3" style="border: 0.2px solid #ccc; opacity: 0.5;">
+
+            <div class="px-2 mb-2">
+                <span class="d-flex align-items-center">
+                    <i class="fas fa-user-friends me-1 text-info" style="font-size: 0.7rem;"></i>
+                    <span class="fw-bold text-info" style="font-size: 0.7rem;">User access</span>
+                </span>
+            </div>
+            <div class="px-2 mb-2">
+                <span class="d-flex align-items-center">
+                    <i class="fas fa-user-lock me-1 text-danger" style="font-size: 0.7rem;"></i>
+                    <span class="fw-bold text-danger" style="font-size: 0.7rem;">must login</span>
+                </span>
+            </div>
+
+                @auth
+                    <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                    <form id="logout-form" action="/logout" method="POST" style="display: none;">
+                        @csrf
+                    </form>
+                @else
+                    <a class="nav-link" href="/login">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </a>
+                @endauth
+
+                <a class="nav-link" href="/admin/panel">
+                    <i class="fas fa-user-circle"></i> Panel
                 </a>
-                <a class="nav-link" href="#guest">
-                    <i class="fas fa-user-friends"></i> Guest
+                <a class="nav-link" href="/admin/home">
+                    <i class="fas fa-chart-line"></i> Admin Acess
                 </a>
-                <hr class="mt-2 mb-1" style="border: 0.5px solid #140168; opacity: 1;">
             </nav>
+            </div>
+
+            <!-- User Profile Box -->
+            <div class="px-2 mb-2">
+                <div class="card" style="background: #f8f9fa; border: 1px solid #dee2e6; padding: 8px; margin: 0;">
+                    <div class="d-flex align-items-center">
+                        <div class="@auth bg-{{ auth()->user()->role === 'admin' ? 'danger' : (auth()->user()->role === 'trainer' ? 'warning' : 'info') }} @else bg-secondary @endauth rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 40px; height: 30px; min-width: 30px;">
+                            <i class="fas fa-user text-white" style="font-size: 0.8rem;"></i>
+                        </div>
+                        <div class="flex-grow-1" style="min-width: 0;">
+                            <div class="fw-bold text-dark" style="font-size: 0.85rem; line-height: 1.2;">@auth{{ auth()->user()->name }}@else Guest User @endauth</div>
+                            <div class="text-muted" style="font-size: 0.7rem; line-height: 1.2;">@auth{{ ucfirst(auth()->user()->role) }}@else No Role @endauth</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Support Chat Button -->
+            <div class="px-2 pb-4 mb-3">
+                <button class="btn btn-success w-100 d-flex align-items-center justify-content-center" data-bs-toggle="modal" data-bs-target="#chatModal" style="border: none; border-radius: 8px; padding: 12px 20px; font-size: 1rem; font-weight: 500; box-shadow: 0 2px 4px rgba(40,167,69,0.3); transition: all 0.2s ease; white-space: nowrap;" onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 8px rgba(40,167,69,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 4px rgba(40,167,69,0.3)'">
+                    <i class="fas fa-comments me-2" style="font-size: 1.1rem;"></i>
+                    <span>Support Chat</span>
+                    <span class="position-absolute top-0 end-0 translate-middle p-1 bg-success border border-light rounded-circle" style="width: 8px; height: 8px;"></span>
+                </button>
+            </div>
+
         </div>
     </div>
 
-    <!-- Chat Button at bottom of sidebar -->
-    <div class="position-fixed" style="left: 0; bottom: 50px; width: 160px; height: 2px; background-color: #fff; z-index: 1040;"></div>
-    <button id="chatButton" class="btn btn-primary position-fixed" style="left: 0; bottom: 0; width: 160px; z-index: 1040;">
-        <i class="fas fa-comments"></i> Chat
-    </button>
+
 
     <!-- Main Content -->
-    <main class="main-content" style="padding-bottom: 100px;">
-        <div class="container-fluid py-4">
+    <main class="main-content" style="padding-bottom: 100px; position: relative; z-index: 1;">
+        <div class="container-fluid" style="padding-top: 0; margin-top: 0;">
             <!-- Dashboard Section -->
             <section id="dashboard-section" class="mb-5">
                 <!-- System Header -->
                 <div class="text-center mb-0">
-                    <p class="lead text-muted mb-0">
-                        <strong>Comprehensive dashboard for managing e-cooking appliance spare parts, tracking inventory levels, and monitoring stock availability across all brands and appliance types.</strong>
+                    <p class="lead mb-0 fw-bold">
+                        Comprehensive dashboard for managing e-cooking appliance spare parts, tracking inventory levels, and monitoring stock availability across all brands and appliance types.
                     </p>
                     <hr style="margin-top: 0 !important; margin-bottom: 0px !important;">
                 </div>
@@ -334,6 +433,15 @@
                             </select>
                         </div>
                     </div>
+                    @auth
+                        @if(auth()->user()->role === 'admin')
+                            <div class="mt-3">
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#partModal" onclick="resetPartForm(); document.getElementById('partModalLabel').textContent='Add New Part';">
+                                    <i class="fas fa-plus me-2"></i>Add New Part
+                                </button>
+                            </div>
+                        @endif
+                    @endauth
                 </div>
 
                 <!-- Inventory Grid -->
@@ -467,6 +575,15 @@
                                 </select>
                             </div>
                         </div>
+                        @auth
+                            @if(auth()->user()->role === 'admin')
+                                <div class="mt-3">
+                                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#applianceModal" onclick="resetApplianceForm(); document.getElementById('applianceModalLabel').textContent='Add New Appliance';">
+                                        <i class="fas fa-plus me-2"></i>Add New Appliance
+                                    </button>
+                                </div>
+                            @endif
+                        @endauth
                     </div>
 
                     <!-- Appliances Grid -->
@@ -570,53 +687,53 @@
 
                     <div class="row g-4 mb-4">
                         <div class="col-lg-3 col-md-6 col-sm-12">
-                            <div class="card p-4">
+                            <div class="card p-4 h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4) !important;">
                                 <div class="d-flex align-items-center">
-                                    <div class="bg-primary rounded p-2 d-flex align-items-center justify-content-center me-3">
-                                        <i class="fas fa-user-cog text-white"></i>
+                                    <div class="bg-white bg-opacity-25 rounded p-3 d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user-cog fa-lg text-white"></i>
                                     </div>
                                     <div>
-                                        <p class="text-muted small">Total</p>
-                                        <p class="h4 mb-0" id="technicianStatsTotal">0</p>
+                                        <p class="text-white-50 small mb-0">Total</p>
+                                        <p class="h4 mb-0 fw-bold" id="technicianStatsTotal">0</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6 col-sm-12">
-                            <div class="card p-4">
+                            <div class="card p-4 h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4) !important;">
                                 <div class="d-flex align-items-center">
-                                    <div class="bg-success rounded p-2 d-flex align-items-center justify-content-center me-3">
-                                        <i class="fas fa-check-circle text-white"></i>
+                                    <div class="bg-white bg-opacity-25 rounded p-3 d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-check-circle fa-lg text-white"></i>
                                     </div>
                                     <div>
-                                        <p class="text-muted small">Available</p>
-                                        <p class="h4 mb-0" id="technicianStatsAvailable">0</p>
+                                        <p class="text-white-50 small mb-0">Available</p>
+                                        <p class="h4 mb-0 fw-bold" id="technicianStatsAvailable">0</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6 col-sm-12">
-                            <div class="card p-4">
+                            <div class="card p-4 h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4) !important;">
                                 <div class="d-flex align-items-center">
-                                    <div class="bg-warning rounded p-2 d-flex align-items-center justify-content-center me-3">
-                                        <i class="fas fa-clock text-white"></i>
+                                    <div class="bg-white bg-opacity-25 rounded p-3 d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-clock fa-lg text-white"></i>
                                     </div>
                                     <div>
-                                        <p class="text-muted small">Busy</p>
-                                        <p class="h4 mb-0" id="technicianStatsBusy">0</p>
+                                        <p class="text-white-50 small mb-0">Busy</p>
+                                        <p class="h4 mb-0 fw-bold" id="technicianStatsBusy">0</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         <div class="col-lg-3 col-md-6 col-sm-12">
-                            <div class="card p-4">
+                            <div class="card p-4 h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4) !important;">
                                 <div class="d-flex align-items-center">
-                                    <div class="bg-danger rounded p-2 d-flex align-items-center justify-content-center me-3">
-                                        <i class="fas fa-times-circle text-white"></i>
+                                    <div class="bg-white bg-opacity-25 rounded p-3 d-flex align-items-center justify-content-center me-3" style="width: 50px; height: 50px;">
+                                        <i class="fas fa-times-circle fa-lg text-white"></i>
                                     </div>
                                     <div>
-                                        <p class="text-muted small">Unavailable</p>
-                                        <p class="h4 mb-0" id="technicianStatsUnavailable">0</p>
+                                        <p class="text-white-50 small mb-0">Unavailable</p>
+                                        <p class="h4 mb-0 fw-bold" id="technicianStatsUnavailable">0</p>
                                     </div>
                                 </div>
                             </div>
@@ -1102,7 +1219,7 @@
     <section id="settings" style="display: none;">
         <div class="container-fluid py-4">
             <h1 class="h2 mb-4"><i class="fas fa-cog me-2"></i>System Settings</h1>
-            
+
             <div class="row g-4">
                 <!-- General Settings -->
                 <div class="col-lg-6">
@@ -1295,7 +1412,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Brands -->
                     <div class="mt-3 p-2 bg-light rounded">
                         <small class="text-muted d-block mb-1"><i class="fas fa-industry me-1"></i>Works with Brands</small>
@@ -1307,7 +1424,7 @@
                         <small class="text-muted d-block mb-1"><i class="fas fa-info-circle me-1"></i>What This Part Does</small>
                         <div id="modalDescription" class="border rounded p-2 bg-light" style="max-height: 100px; overflow-y: auto; font-size: 0.9rem;"></div>
                     </div>
-                    
+
                     <!-- Compatible Appliances & Comments -->
                     <div class="row g-2 mt-2">
                         <div class="col-md-6">
@@ -1864,6 +1981,162 @@
         </div>
     </div>
 
+    <!-- Part Modal -->
+    <div class="modal fade" id="partModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title" id="partModalLabel"><i class="fas fa-cogs me-2"></i>Add/Edit Part</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <form id="partForm">
+                        <input type="hidden" id="partId">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="partNumber" class="form-label">Part Number *</label>
+                                <input type="text" class="form-control" id="partNumber" name="part_number" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="partName" class="form-label">Part Name *</label>
+                                <input type="text" class="form-control" id="partName" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="partAppliance" class="form-label">Appliance Type *</label>
+                                <select class="form-select" id="partAppliance" name="appliance_id" required>
+                                    <option value="">Select Appliance</option>
+                                    @foreach($appliances as $appliance)
+                                        <option value="{{ $appliance->id }}">{{ $appliance->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="partLocation" class="form-label">Location</label>
+                                <input type="text" class="form-control" id="partLocation" name="location">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="partPrice" class="form-label">Price (UGX)</label>
+                                <input type="number" class="form-control" id="partPrice" name="price" min="0" step="0.01">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="partAvailability" class="form-label">Availability</label>
+                                <select class="form-select" id="partAvailability" name="availability">
+                                    <option value="1">Available</option>
+                                    <option value="0">Not Available</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label for="partDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="partDescription" name="description" rows="3"></textarea>
+                            </div>
+                            <div class="col-12">
+                                <label for="partComments" class="form-label">Comments</label>
+                                <textarea class="form-control" id="partComments" name="comments" rows="2"></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Compatible Brands</label>
+                                <div id="partBrandsContainer">
+                                    @foreach($brands as $brand)
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="brands[]" value="{{ $brand->id }}" id="brand{{ $brand->id }}">
+                                            <label class="form-check-label" for="brand{{ $brand->id }}">
+                                                {{ $brand->name }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Specific Appliances</label>
+                                <div id="partSpecificAppliancesContainer">
+                                    <!-- Specific appliances will be loaded dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i>Cancel</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="resetPartForm();"><i class="fas fa-undo me-1"></i>Reset</button>
+                    <button type="submit" form="partForm" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Part</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Appliance Modal -->
+    <div class="modal fade" id="applianceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    <h5 class="modal-title" id="applianceModalLabel"><i class="fas fa-tools me-2"></i>Add/Edit Appliance</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <form id="applianceForm">
+                        <input type="hidden" id="applianceId">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="applianceName" class="form-label">Appliance Name *</label>
+                                <input type="text" class="form-control" id="applianceName" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="applianceBrand" class="form-label">Brand</label>
+                                <select class="form-select" id="applianceBrand" name="brand_id">
+                                    <option value="">Select Brand</option>
+                                    @foreach($brands as $brand)
+                                        <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="applianceModel" class="form-label">Model</label>
+                                <input type="text" class="form-control" id="applianceModel" name="model">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="appliancePower" class="form-label">Power</label>
+                                <input type="text" class="form-control" id="appliancePower" name="power">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="applianceSku" class="form-label">SKU</label>
+                                <input type="text" class="form-control" id="applianceSku" name="sku">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="applianceStatus" class="form-label">Status *</label>
+                                <select class="form-select" id="applianceStatus" name="status" required>
+                                    <option value="Available">Available</option>
+                                    <option value="In Use">In Use</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="appliancePrice" class="form-label">Price (UGX)</label>
+                                <input type="number" class="form-control" id="appliancePrice" name="price" min="0" step="0.01">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="applianceColor" class="form-label">Color</label>
+                                <input type="text" class="form-control" id="applianceColor" name="color" placeholder="e.g., bg-primary">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="applianceIcon" class="form-label">Icon</label>
+                                <input type="text" class="form-control" id="applianceIcon" name="icon" placeholder="e.g., fas fa-tools">
+                            </div>
+                            <div class="col-12">
+                                <label for="applianceDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="applianceDescription" name="description" rows="3"></textarea>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i>Cancel</button>
+                    <button type="button" class="btn btn-outline-primary" onclick="resetApplianceForm();"><i class="fas fa-undo me-1"></i>Reset</button>
+                    <button type="submit" form="applianceForm" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save Appliance</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- View Technician Details Modal -->
     <div class="modal fade" id="technicianViewModal" tabindex="-1" aria-labelledby="technicianViewModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl">
@@ -2237,7 +2510,7 @@
                             <div class="card text-center">
                                 <div class="card-body p-3">
                                     <div class="h4 text-primary mb-0" id="applianceViewPartsCount">0</div>
-                                    <small class="text-muted">Associated Parts</small>
+                                    <small class="text-muted">Available number in stock</small>
                                 </div>
                             </div>
                         </div>
@@ -2260,52 +2533,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-end modal-fullscreen-sm-down">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="chatModalLabel"><i class="fas fa-comments"></i> Chat with Support</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body d-flex flex-column" style="height: 400px;">
-                    <div id="chatMessages" class="flex-grow-1 overflow-auto p-3 border-bottom" style="background-color: #f8f9fa;">
-                        <!-- Messages will be loaded here -->
-                    </div>
-                    <div class="p-3">
-                        <div class="input-group mb-2">
-                            <button class="btn btn-outline-secondary" type="button" id="attachBtn" title="Attach file"><i class="fas fa-paperclip"></i></button>
-                            <input type="file" id="fileInput" style="display: none;" accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
-                            <button class="btn btn-outline-secondary" type="button" id="emojiBtn" title="Emojis"><i class="fas fa-smile"></i></button>
-                            <button class="btn btn-outline-secondary" type="button" id="gifBtn" title="GIFs"><i class="fas fa-gift"></i></button>
-                            <button class="btn btn-outline-secondary" type="button" id="locationBtn" title="Location"><i class="fas fa-map-marker-alt"></i></button>
-                            <button class="btn btn-outline-secondary" type="button" id="contactBtn" title="Contact"><i class="fas fa-user"></i></button>
-                            <input type="text" id="chatMessageInput" class="form-control" placeholder="Type your message..." aria-label="Chat message">
-                            <button class="btn btn-outline-secondary" type="button" id="voiceBtn" title="Voice message"><i class="fas fa-microphone"></i></button>
-                            <button class="btn btn-primary" type="button" id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="Search messages..." style="width: 70%;">
-                            <button class="btn btn-outline-secondary btn-sm" id="searchBtn"><i class="fas fa-search"></i></button>
-                        </div>
-                        <div id="emojiPicker" class="mt-2 d-none">
-                            <div class="emoji-grid">
-                                😀 😃 😄 😁 😆 😅 😂 🤣 😊 😇 🙂 🙃 😉 😌 😍 🥰 😘 😗 😙 😚 😋 😛 😝 😜 🤪 🤨 🧐 🤓 😎 🤩 🥳 😏 😒 😞 😔 😟 😕 🙁 ☹️ 😣 😖 😫 😩 🥺 😢 😭 😤 😠 😡 🤬 🤯 😳 🥵 🥶 😱 😨 😰 😥 😓 🤗 🤔 🤭 🤫 🤥 😶 😐 😑 😬 🙄 😯 😦 😧 😮 😲 🥱 😴 🤤 😪 😵 🤐 🥴 🤢 🤮 🤧 😷 🤒 🤕 🤑 🤠 😈 👿 👹 👺 🤡 💩 👻 💀 ☠️ 👽 👾 🤖 🎃 😺 😸 😹 😻 😼 😽 🙀 😿 😾
-                            </div>
-                        </div>
-                        <div id="voiceRecorder" class="mt-2 d-none">
-                            <button class="btn btn-danger" id="recordBtn"><i class="fas fa-circle"></i> Start Recording</button>
-                            <button class="btn btn-success d-none" id="stopRecordBtn"><i class="fas fa-stop"></i> Stop & Send</button>
-                            <audio id="audioPreview" controls class="mt-2 d-none"></audio>
-                        </div>
-                        <div id="gifPicker" class="mt-2 d-none">
-                            <input type="text" id="gifSearch" class="form-control form-control-sm mb-2" placeholder="Search GIFs...">
-                            <div id="gifResults" class="d-flex flex-wrap"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <!-- Login Modal -->
     <div class="modal fade" id="loginModal" tabindex="-1">
@@ -2364,7 +2592,110 @@
     <script>
         const chartData = @json($chartData);
     </script>
+    <script src="{{ asset('assets/navbar.js') }}"></script>
     <script src="{{ asset('assets/script.js') }}"></script>
+
+    <!-- Admin Forms JavaScript -->
+    <script>
+        // Part Form Functions
+        function resetPartForm() {
+            document.getElementById('partForm').reset();
+            document.getElementById('partId').value = '';
+            document.getElementById('partModalLabel').textContent = 'Add New Part';
+            // Uncheck all brand checkboxes
+            document.querySelectorAll('input[name="brands[]"]').forEach(cb => cb.checked = false);
+        }
+
+        document.getElementById('partForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const partId = document.getElementById('partId').value;
+
+            // Handle brands array
+            const selectedBrands = [];
+            document.querySelectorAll('input[name="brands[]"]:checked').forEach(cb => {
+                selectedBrands.push(cb.value);
+            });
+            formData.set('brands', JSON.stringify(selectedBrands));
+
+            // Handle specific appliances array (if implemented)
+            const selectedSpecificAppliances = [];
+            // Add logic for specific appliances if needed
+            formData.set('specific_appliances', JSON.stringify(selectedSpecificAppliances));
+
+            const url = partId ? `/api/parts/${partId}` : '/api/parts';
+            const method = partId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(Object.fromEntries(formData))
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message || data.id) {
+                    alert('Part saved successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('partModal')).hide();
+                    location.reload(); // Refresh to show updated data
+                } else {
+                    alert('Error saving part');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving part');
+            });
+        });
+
+        // Appliance Form Functions
+        function resetApplianceForm() {
+            document.getElementById('applianceForm').reset();
+            document.getElementById('applianceId').value = '';
+            document.getElementById('applianceModalLabel').textContent = 'Add New Appliance';
+        }
+
+        document.getElementById('applianceForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const applianceId = document.getElementById('applianceId').value;
+
+            const url = applianceId ? `/api/appliances/${applianceId}` : '/api/appliances';
+            const method = applianceId ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(Object.fromEntries(formData))
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message || data.id) {
+                    alert('Appliance saved successfully!');
+                    bootstrap.Modal.getInstance(document.getElementById('applianceModal')).hide();
+                    location.reload(); // Refresh to show updated data
+                } else {
+                    alert('Error saving appliance');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving appliance');
+            });
+        });
+    </script>
+
+    @include('chat_modal')
+
 </body>
 </html>
 

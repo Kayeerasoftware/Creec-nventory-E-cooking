@@ -1,0 +1,34 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table('trainers', function (Blueprint $table) {
+            $table->string('password')->nullable();
+            $table->rememberToken();
+            $table->timestamp('email_verified_at')->nullable();
+        });
+
+        Schema::table('technicians', function (Blueprint $table) {
+            $table->string('password')->nullable();
+            $table->rememberToken();
+            $table->timestamp('email_verified_at')->nullable();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('trainers', function (Blueprint $table) {
+            $table->dropColumn(['password', 'remember_token', 'email_verified_at']);
+        });
+
+        Schema::table('technicians', function (Blueprint $table) {
+            $table->dropColumn(['password', 'remember_token', 'email_verified_at']);
+        });
+    }
+};

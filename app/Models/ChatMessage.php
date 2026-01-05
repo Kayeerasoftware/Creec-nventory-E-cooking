@@ -1,0 +1,33 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class ChatMessage extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'chat_id',
+        'sender_type',
+        'sender_id',
+        'message',
+        'message_type',
+        'file_path',
+        'file_name',
+        'file_type',
+        'file_size',
+        'is_read'
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean'
+    ];
+
+    public function chat()
+    {
+        return $this->belongsTo(Chat::class);
+    }
+}
